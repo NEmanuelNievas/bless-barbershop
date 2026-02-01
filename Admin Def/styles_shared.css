@@ -1,0 +1,74 @@
+/* Shared styles for the Prueba pages — background, neon title, menu icons, and small utilities */
+:root{
+    --bg-dark: #072042;
+    --bg-mid:  #123b86;
+    --accent:  rgba(255,255,255,0.10);
+    --primary-blue: #2563EB;
+    --primary-blue-dark: #1D4ED8;
+}
+
+/* Page background: layered radial highlights over a vertical blue gradient */
+body{
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    color: #e6eef8;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--bg-dark);
+    background-image:
+        radial-gradient(600px 420px at 12% 18%, rgba(255,255,255,0.18), rgba(255,255,255,0.05) 25%, transparent 45%),
+        radial-gradient(420px 320px at 82% 78%, rgba(255,255,255,0.12), rgba(255,255,255,0.03) 22%, transparent 48%),
+        linear-gradient(180deg, var(--bg-mid) 0%, var(--bg-dark) 70%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+}
+
+/* Neon title (static glow) */
+.neon-title{
+    color: #ffffff;
+    text-shadow:
+        0 0 4px rgba(255,255,255,0.95),
+        0 0 10px rgba(99,102,241,0.65),
+        0 0 18px rgba(79,70,229,0.45),
+        0 0 30px rgba(79,70,229,0.30);
+}
+
+/* Menu hover and icon sizing */
+.menu-item-hover:hover{
+    background-color: rgba(255,255,255,0.06);
+    transition: background-color 0.2s ease-in-out;
+}
+.menu-item-hover svg{ width:20px; height:20px; flex-shrink:0; }
+.menu-item-hover .menu-text{ display:inline-block; }
+
+/* Card/card-like containers to sit nicely on top of the background */
+.card-surface{
+    background: rgba(255,255,255,0.96);
+    box-shadow: 0 20px 40px rgba(2,6,23,0.08);
+    border-radius: 12px;
+    color: #0f172a; /* gray-900 for content text */
+    /* Border azul más visible para destacar los paneles sobre el fondo */
+    border: 2px solid rgba(37,99,235,0.24);
+    /* Ajuste de sombra para que el borde azul no se pierda */
+    box-shadow: 0 22px 44px rgba(2,6,23,0.10);
+}
+
+/* Utility: center container vertical/horizontal */
+.full-center{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1rem; }
+
+/* Small responsive tweaks */
+@media (max-width:640px){
+    .neon-title{ font-size:1.6rem; }
+}
+
+/* Highlight specific form fields (e.g., monto de gasto y categoría) with a subtle blue box */
+#expenseAmount, #expenseCategory {
+    border: 2px solid rgba(37,99,235,0.36); /* azul más visible para campos importantes */
+    border-radius: 10px;
+    box-shadow: 0 10px 20px rgba(37,99,235,0.08);
+    background: #ffffff; /* asegurar contraste */
+}
+
+/* If the inputs already have internal padding, keep their existing padding; adjust select to fill width */
+#expenseCategory { padding: 0.45rem 0.75rem; }

@@ -1,0 +1,41 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function: verifica si el usuario está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Validación de tamaño de archivo (máximo 5MB)
+    function isValidSize() {
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+    
+    // Validación de tipo de imagen
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    // Carpeta de comprobantes de gastos
+    match /receipts/{receiptFile} {
+      // Solo usuarios autenticados pueden subir y leer comprobantes
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isValidSize() && isImage();
+      allow delete: if false; // No permitir eliminar comprobantes para auditoría
+    }
+    
+    // Carpeta de fotos de clientes
+    match /clients/{clientPhoto} {
+      // Solo usuarios autenticados pueden subir, leer y eliminar fotos de clientes
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isValidSize() && isImage();
+      allow delete: if isAuthenticated(); // Permitir eliminar al borrar cliente
+    }
+    
+    // Denegar acceso a cualquier otra ruta no especificada
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,227 @@
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agregar Clientes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../styles_shared.css">
+    <style>
+        body { font-family: Inter, sans-serif; background: linear-gradient(180deg,#123b86,#072042); color: #e6eef8; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6">
+    <div class="w-full max-w-2xl bg-white rounded-xl shadow-xl p-6 text-gray-800">
+        <div class="flex items-center justify-center mb-4">
+            <h2 class="text-3xl md:text-4xl font-bold text-blue-600 text-center">Agregar Clientes</h2>
+        </div>
+
+        <form id="clientForm" class="space-y-4 bg-gray-50 p-4 rounded">
+            <div>
+                <label class="block text-sm font-medium">Nombre</label>
+                <input id="name" class="mt-1 block w-full border rounded px-3 py-2" required />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium">Dirección</label>
+                <input id="address" class="mt-1 block w-full border rounded px-3 py-2" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium">Teléfono</label>
+                    <input id="phone" class="mt-1 block w-full border rounded px-3 py-2" pattern="[0-9+ ()-]{6,}" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">Fecha de cumpleaños</label>
+                    <input id="birthday" type="date" class="mt-1 block w-full border rounded px-3 py-2" />
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium">Foto</label>
+                <div class="mt-1 flex items-center gap-4">
+                    <input id="photo" type="file" accept="image/*" class="block" />
+                    <img id="photoPreview" src="" alt="Preview" class="h-12 w-12 object-cover rounded-full hidden border" />
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">Agregar Cliente</button>
+                <button type="button" id="clearBtn" class="px-4 py-2 border rounded">Limpiar</button>
+            </div>
+        </form>
+
+        <hr class="my-4" />
+
+        <div>
+            <h3 class="text-lg font-semibold mb-2">Clientes guardados</h3>
+            <div id="clientsList" class="space-y-3"></div>
+        </div>
+
+        <div class="mt-4 text-center">
+            <a href="index_admin.html" class="text-sm text-blue-600 hover:text-blue-700">← Volver a la página principal</a>
+        </div>
+    </div>
+
+    <script type="module">
+        // --- FIREBASE IMPORTS ---
+        import { clientsAPI } from './firebase-config.js';
+
+        const form = document.getElementById('clientForm');
+        const nameInput = document.getElementById('name');
+        const addressInput = document.getElementById('address');
+        const phoneInput = document.getElementById('phone');
+        const birthdayInput = document.getElementById('birthday');
+        const photoInput = document.getElementById('photo');
+        const photoPreview = document.getElementById('photoPreview');
+        const clientsList = document.getElementById('clientsList');
+        const clearBtn = document.getElementById('clearBtn');
+
+        // --- FUNCIONES DE PERSISTENCIA EN FIRESTORE ---
+
+        /**
+         * Carga todos los clientes desde Firestore
+         * @returns {Promise<Array>} Array de clientes
+         */
+        async function loadClients() {
+            try {
+                return await clientsAPI.getAll();
+            } catch (error) {
+                console.error('Error al cargar clientes:', error);
+                return [];
+            }
+        }
+
+        /**
+         * Renderiza la lista de clientes en el DOM
+         */
+        async function renderClients() {
+            clientsList.innerHTML = '<p class="text-sm text-gray-500">Cargando clientes...</p>';
+            
+            const clients = await loadClients();
+            
+            clientsList.innerHTML = '';
+            if (clients.length === 0) {
+                clientsList.innerHTML = '<p class="text-sm text-gray-500">No hay clientes guardados.</p>';
+                return;
+            }
+
+            clients.forEach(c => {
+                const card = document.createElement('div');
+                card.className = 'flex items-center gap-4 p-3 bg-gray-100 rounded';
+
+                const img = document.createElement('img');
+                img.src = c.photoURL || '';
+                img.alt = c.name;
+                img.className = 'h-12 w-12 object-cover rounded-full border';
+                img.onerror = () => { img.src = ''; }; // Fallback si no carga la imagen
+
+                const info = document.createElement('div');
+                info.innerHTML = `<div class="font-semibold">${escapeHtml(c.name)}</div>
+                                  <div class="text-sm text-gray-600">${escapeHtml(c.phone || '')} • ${escapeHtml(c.address || '')}</div>
+                                  <div class="text-xs text-gray-500">Cumple: ${c.birthday || '-'}</div>`;
+
+                const btns = document.createElement('div');
+                btns.className = 'ml-auto flex gap-2 items-center';
+
+                const del = document.createElement('button');
+                del.className = 'px-3 py-1 bg-red-500 text-white rounded text-sm';
+                del.textContent = 'Eliminar';
+                del.addEventListener('click', async () => { 
+                    if (confirm(`¿Eliminar a ${c.name}?`)) {
+                        del.disabled = true;
+                        del.textContent = 'Eliminando...';
+                        await deleteClient(c.id);
+                    }
+                });
+
+                btns.appendChild(del);
+
+                card.appendChild(img);
+                card.appendChild(info);
+                card.appendChild(btns);
+
+                clientsList.appendChild(card);
+            });
+        }
+
+        function escapeHtml(s) {
+            return String(s || '').replace(/[&<>"]/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+        }
+
+        /**
+         * Elimina un cliente de Firestore y Storage
+         * @param {string} id - ID del cliente a eliminar
+         */
+        async function deleteClient(id) {
+            try {
+                await clientsAPI.delete(id);
+                await renderClients();
+            } catch (error) {
+                console.error('Error al eliminar cliente:', error);
+                alert('Error al eliminar el cliente. Por favor intente nuevamente.');
+                await renderClients(); // Recargar para restaurar el botón
+            }
+        }
+
+        photoInput.addEventListener('change', (e) => {
+            const f = e.target.files && e.target.files[0];
+            if (!f) { photoPreview.src = ''; photoPreview.classList.add('hidden'); return; }
+            
+            // Preview local de la imagen antes de subir
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                photoPreview.src = evt.target.result;
+                photoPreview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(f);
+        });
+
+        form.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            if (!nameInput.value.trim()) return alert('Nombre requerido');
+
+            const photoFile = photoInput.files && photoInput.files[0];
+
+            const clientData = {
+                name: nameInput.value.trim(),
+                address: addressInput.value.trim(),
+                phone: phoneInput.value.trim(),
+                birthday: birthdayInput.value
+            };
+
+            // Deshabilitar botón durante el proceso
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Guardando...';
+
+            try {
+                await clientsAPI.create(clientData, photoFile);
+                
+                console.log('--- Cliente agregado a Firestore ---');
+                console.log(clientData);
+                
+                await renderClients();
+
+                form.reset();
+                photoPreview.src = '';
+                photoPreview.classList.add('hidden');
+                
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Agregar Cliente';
+            } catch (error) {
+                console.error('Error al agregar cliente:', error);
+                alert('Error al guardar el cliente. Por favor intente nuevamente.');
+                
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Agregar Cliente';
+            }
+        });
+
+        clearBtn.addEventListener('click', () => { form.reset(); photoPreview.src = ''; photoPreview.classList.add('hidden'); });
+
+        // Init
+        renderClients();
+    </script>
+</body>
+</html>

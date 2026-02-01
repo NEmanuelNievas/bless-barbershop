@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cobranza de Cortes</title>
+    <!-- Carga de Tailwind CSS para un diseño moderno y responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles_shared.css">
+    <!-- SheetJS library para exportar a Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    
+    <!-- Configuración personalizada de Tailwind para el color azul y la fuente Inter -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-blue': '#2563EB', // Un azul vibrante
+                        'primary-blue-dark': '#1D4ED8',
+                        'success-green': '#10B981', // Verde para éxito
+                        'error-red': '#EF4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Estilo base para el cuerpo y el fondo (delegado al shared stylesheet) */
+        body { font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+        /* Estilo para el contenedor principal centrado */
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; /* Centra el formulario verticalmente */
+            padding: 1.5rem;
+        }
+
+        /* Estilo para los checkboxes y radio buttons */
+        input[type="checkbox"], input[type="radio"] {
+            /* Personalización del color de Tailwind para inputs */
+            accent-color: var(--primary-blue, #2563EB); 
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        /* Clase de estilo para las opciones de la lista */
+        .option-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+
+        .option-item:hover {
+            background-color: #F8FAFC; /* Gris claro al pasar el mouse */
+        }
+        
+        /* Estilos específicos para impresión (oculta elementos innecesarios) */
+        @media print {
+            .app-container, .mt-6 {
+                display: none;
+            }
+            #ticketModal {
+                /* Asegura que el modal sea lo único visible y ocupe el espacio */
+                position: static !important;
+                display: block !important;
+                padding: 0 !important;
+                background: none !important;
+            }
+            #ticketModal > div {
+                box-shadow: none !important;
+                border: 1px solid #000;
+                max-width: 300px; /* Tamaño típico de ticket */
+                margin: 0 auto;
+            }
+            .print-hidden {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ######################################################################## -->
+    <!--                                  MODAL TICKET                            -->
+    <!-- ######################################################################## -->
+    <div id="ticketModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden transform transition duration-300">
+            
+            <!-- Contenido del Ticket -->
+            <div class="p-6 space-y-4 text-sm">
+                <header class="text-center border-b pb-3 border-dashed border-gray-300">
+                    <h3 class="text-xl font-bold text-primary-blue">TICKET DE PAGO</h3>
+                    <p class="text-xs text-gray-500">BLESS BARBERSHOP</p>
+                    <p id="ticketDate" class="text-xs text-gray-500 mt-1"></p>
+                    <p id="ticketOperator" class="text-xs text-gray-500 mt-1"></p>
+                </header>
+
+                <!-- 1. Servicios -->
+                <div class="space-y-2">
+                    <p class="font-semibold text-gray-800">Detalle de Servicios:</p>
+                    <ul id="ticketServicesList" class="list-none pl-0 text-xs space-y-1">
+                        <!-- El JS poblará la lista aquí -->
+                    </ul>
+                </div>
+
+                <!-- 2. Resumen de Pago -->
+                <div class="space-y-2 border-t pt-3 border-gray-200">
+                    <div class="flex justify-between font-medium text-gray-700 items-center">
+                        <span class="flex items-center gap-2">
+                            <!-- Payment icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="2" y="7" width="20" height="10" rx="2"></rect>
+                                <path d="M2 11h20"></path>
+                            </svg>
+                            Método de Pago:
+                        </span>
+                        <span id="ticketPaymentMethod" class="text-primary-blue-dark font-semibold"></span>
+                    </div>
+                </div>
+                
+                <!-- 3. Total -->
+                <div class="flex justify-between text-lg font-bold text-gray-900 border-t pt-2 border-dashed border-gray-300 items-center">
+                    <span class="flex items-center gap-2">
+                        <!-- Total icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9"></circle>
+                            <path d="M12 8v8"></path>
+                            <path d="M9 11h6"></path>
+                        </svg>
+                        TOTAL COBRADO:
+                    </span>
+                    <span id="ticketTotal" class="text-success-green"></span>
+                </div>
+
+                <!-- 4. Número de Transacción -->
+                <div class="border-t pt-3 text-center border-gray-200">
+                    <p class="text-xs text-gray-500">Nro. de Transacción:</p>
+                    <p id="ticketTransactionId" class="text-base font-mono text-gray-900 font-bold"> 
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline-block mr-2" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7"></path>
+                            <path d="M7 10l5-5 5 5"></path>
+                        </svg>
+                    </p>
+                    <p id="ticketTransactionId" class="text-base font-mono text-gray-900 font-bold"></p>
+                </div>
+            </div>
+
+            <!-- Botones de Acción (Ocultos en impresión) -->
+            <div class="p-4 bg-gray-50 flex justify-end space-x-3 print-hidden">
+                <button onclick="window.print()" class="px-4 py-2 text-sm bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition inline-flex items-center gap-2">
+                    <!-- Printer icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1F2937" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M6 9V2h12v7"></path>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-3h20v3a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8" rx="2"></rect>
+                    </svg>
+                    Imprimir
+                </button>
+                <button id="closeTicketButton" class="px-4 py-2 text-sm bg-primary-blue hover:bg-primary-blue-dark text-white font-semibold rounded-lg transition inline-flex items-center gap-2">
+                    <!-- X / close icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- ######################################################################## -->
+
+
+    <!-- ######################################################################## -->
+    <!--                                  PÁGINA PRINCIPAL                          -->
+    <!-- ######################################################################## -->
+    <div class="app-container">
+
+        <!-- Título de la Barbershop -->
+        <h1 class="neon-title text-4xl font-extrabold mb-8 tracking-wide">
+            BLESS BARBERSHOP
+        </h1>
+
+        <!-- Contenedor del Formulario -->
+        <div class="w-full max-w-lg bg-white shadow-2xl rounded-xl p-6 md:p-10 space-y-6">
+            
+            <!-- Título de la Página -->
+            <header class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Cobranza de Cortes</h2>
+                <p class="text-gray-500 text-sm">Selecciona los servicios y el método de pago.</p>
+            </header>
+
+            <!-- 1. SELECCIÓN DE SERVICIOS (Checkboxes) -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-primary-blue border-b pb-2">Servicios Realizados</h3>
+                
+                <form id="serviceForm" class="space-y-2">
+                    
+                    <label class="option-item">
+                        <span class="flex items-center gap-3">
+                            <span class="opt-icon" aria-hidden="true">
+                                <!-- Scissors icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="6" cy="6" r="3"></circle>
+                                    <circle cx="18" cy="18" r="3"></circle>
+                                    <path d="M8.5 8.5L15.5 15.5"></path>
+                                    <path d="M15.5 8.5L8.5 15.5"></path>
+                                </svg>
+                            </span>
+                            <span class="text-gray-700">Corte estándar</span>
+                        </span>
+                        <input type="checkbox" name="servicio" value="Corte estándar" class="form-checkbox text-primary-blue rounded">
+                    </label>
+
+                    <label class="option-item">
+                        <span class="flex items-center gap-3">
+                            <span class="opt-icon" aria-hidden="true">
+                                <!-- Beard / face icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 2a7 7 0 0 0-7 7v3a7 7 0 0 0 14 0V9a7 7 0 0 0-7-7z"></path>
+                                    <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                                </svg>
+                            </span>
+                            <span class="text-gray-700">Corte con barba</span>
+                        </span>
+                        <input type="checkbox" name="servicio" value="Corte con barba" class="form-checkbox text-primary-blue rounded">
+                    </label>
+
+                    <label class="option-item">
+                        <span class="flex items-center gap-3">
+                            <span class="opt-icon" aria-hidden="true">
+                                <!-- Star / VIP icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 2l2.9 6.09L21 9.27l-5 4.87L17.8 22 12 18.77 6.2 22 8 14.14 3 9.27l6.1-1.18L12 2z"></path>
+                                </svg>
+                            </span>
+                            <span class="text-gray-700">Corte V.I.P.</span>
+                        </span>
+                        <input type="checkbox" name="servicio" value="Corte V.I.P." class="form-checkbox text-primary-blue rounded">
+                    </label>
+
+                    <label class="option-item">
+                        <span class="flex items-center gap-3">
+                            <span class="opt-icon" aria-hidden="true">
+                                <!-- Tintura / droplet icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 2C12 2 7 8 7 12a5 5 0 0 0 10 0c0-4-5-10-5-10z"></path>
+                                    <path d="M12 14v6"></path>
+                                </svg>
+                            </span>
+                            <span class="text-gray-700">Tintura</span>
+                        </span>
+                        <input type="checkbox" name="servicio" value="Tintura" class="form-checkbox text-primary-blue rounded">
+                    </label>
+
+                    <!-- Nueva opción: Indumentaria -->
+                    <label class="option-item">
+                        <span class="flex items-center gap-3">
+                            <span class="opt-icon" aria-hidden="true">
+                                <!-- Shirt / clothing icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 7l3-2 2 1 3-1 2 1 3 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7z"></path>
+                                    <path d="M9 14v-4"></path>
+                                    <path d="M15 14v-4"></path>
+                                </svg>
+                            </span>
+                            <span class="text-gray-700">Indumentaria</span>
+                        </span>
+                        <input type="checkbox" name="servicio" value="Indumentaria" class="form-checkbox text-primary-blue rounded">
+                    </label>
+
+                </form>
+            </div>
+
+            <!-- 1.5 NOMBRE DE OPERADOR -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-primary-blue border-b pb-2">Nombre de Operador</h3>
+
+                <div class="relative">
+                    <select id="operatorSelect" class="w-full p-3 border border-gray-300 rounded-lg text-gray-700
+                                  focus:ring-2 focus:ring-primary-blue focus:border-primary-blue transition duration-150">
+                        <option value="" disabled selected>Seleccionar operador</option>
+                        <option value="Federico">Federico</option>
+                        <option value="Tommy">Tommy</option>
+                        <option value="Cristian">Cristian</option>
+                        <option value="Chavero">Chavero</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Divisor -->
+            <hr class="border-t border-gray-200 my-6">
+
+            <!-- 2. MÉTODO DE PAGO (Radio Buttons) -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-primary-blue border-b pb-2">Método de Pago</h3>
+
+                <div id="paymentMethod" class="flex flex-col space-y-2 md:flex-row md:space-x-4 md:space-y-0">
+                    
+                    <!-- Opción Transferencia -->
+                    <label class="option-item flex-grow">
+                        <span class="flex items-center gap-3">
+                            <span class="opt-icon" aria-hidden="true">
+                                <!-- Bank/Transfer icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 10.5L12 5l9 5.5"></path>
+                                    <path d="M5 11v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"></path>
+                                    <path d="M9 16h.01M15 16h.01"></path>
+                                </svg>
+                            </span>
+                            <span class="text-gray-700 font-medium">Transferencia bancaria</span>
+                        </span>
+                        <input type="radio" name="pago" value="Transferencia bancaria" class="form-radio text-primary-blue" required>
+                    </label>
+
+                    <!-- Opción Efectivo -->
+                    <label class="option-item flex-grow">
+                        <span class="flex items-center gap-3">
+                            <span class="opt-icon" aria-hidden="true">
+                                <!-- Cash icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="2" y="7" width="20" height="14" rx="2"></rect>
+                                    <path d="M16 3v4"></path>
+                                    <path d="M8 3v4"></path>
+                                    <circle cx="12" cy="14" r="3"></circle>
+                                </svg>
+                            </span>
+                            <span class="text-gray-700 font-medium">Efectivo</span>
+                        </span>
+                        <input type="radio" name="pago" value="Efectivo" class="form-radio text-primary-blue">
+                    </label>
+
+                </div>
+            </div>
+
+            <!-- Divisor -->
+            <hr class="border-t border-gray-200 my-6">
+
+            <!-- 3. INGRESO DEL TOTAL Y BOTÓN DE COBRAR -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-primary-blue border-b pb-2">Total a Cobrar</h3>
+
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 1v22" />
+                            <path d="M17 5H9a3 3 0 1 0 0 6h6a3 3 0 1 1 0 6H7" />
+                        </svg>
+                    </span>
+              <input type="text" id="totalAmount" placeholder="Total calculado" readonly
+                  class="w-full p-3 border border-gray-300 rounded-lg text-lg text-right pl-12 bg-gray-50 
+                      focus:ring-2 focus:ring-primary-blue focus:border-primary-blue transition duration-150">
+                </div>
+
+                <button id="chargeButton" 
+                        class="w-full py-3 mt-4 bg-success-green hover:bg-green-600 text-white 
+                               font-bold rounded-lg shadow-lg 
+                               transition duration-300 ease-in-out transform hover:scale-[1.01]
+                               focus:outline-none focus:ring-4 focus:ring-success-green/50">
+                    <span class="inline-flex items-center gap-2 justify-center">
+                        <!-- Check / receipt icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <path d="M7 10l3 3 7-7"></path>
+                        </svg>
+                        <span>Finalizar Cobro</span>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Mensaje de Resultado para ERRORES (Se usa para validaciones) -->
+            <div id="resultMessage" class="hidden mt-6 p-3 bg-red-100 border border-error-red text-center rounded-lg text-error-red font-medium" role="alert">
+                <!-- Se pobla con mensajes de error si la validación falla -->
+            </div>
+
+        </div>
+
+        <!-- Vínculo para volver (simulación de navegación) -->
+        <a href="index_admin.html" class="mt-6 text-sm text-primary-blue hover:text-primary-blue-dark transition duration-150 ease-in-out font-medium">
+            Volver a la Página Principal
+        </a>
+
+    </div>
+
+    <script type="module">
+    // Lógica de JavaScript para el Ticket de Pago y la Transacción
+    import { servicesAPI, transactionsAPI, settingsAPI } from './firebase-config.js';
+        
+    const totalAmountInput = document.getElementById('totalAmount');
+        const chargeButton = document.getElementById('chargeButton');
+        const resultMessage = document.getElementById('resultMessage');
+        const serviceForm = document.getElementById('serviceForm');
+        
+        const ticketModal = document.getElementById('ticketModal');
+        const closeTicketButton = document.getElementById('closeTicketButton');
+        const ticketServicesList = document.getElementById('ticketServicesList');
+    const ticketPaymentMethod = document.getElementById('ticketPaymentMethod');
+    const ticketTotal = document.getElementById('ticketTotal');
+    const ticketTransactionId = document.getElementById('ticketTransactionId');
+    const ticketDate = document.getElementById('ticketDate');
+        const ticketOperator = document.getElementById('ticketOperator');
+        const operatorSelect = document.getElementById('operatorSelect');
+
+        // --- FUNCIONES DE PERSISTENCIA (MIGRADAS A FIRESTORE) ---
+        
+        /**
+         * Carga las transacciones desde Firestore
+         * @returns {Promise<Array>} Array de objetos de transacciones
+         */
+        async function loadTransactions() {
+            try {
+                return await transactionsAPI.getAll();
+            } catch (error) {
+                console.error('Error cargando transacciones:', error);
+                return [];
+            }
+        }
+
+        /**
+         * Agrega una nueva transacción a Firestore
+         * @param {Object} transaction - Objeto con datos de la transacción
+         */
+        async function addTransaction(transaction) {
+            try {
+                const docId = await transactionsAPI.create(transaction);
+                console.log('✅ Transacción guardada en Firestore con ID:', docId);
+                return docId;
+            } catch (error) {
+                console.error('❌ Error guardando transacción:', error);
+                throw error;
+            }
+        }
+
+        /**
+         * Exporta las transacciones a un archivo Excel mensual (MANUAL)
+         */
+        async function exportToExcel() {
+            const transactions = await loadTransactions();
+            
+            if (transactions.length === 0) {
+                return; // No hay nada que exportar
+            }
+
+            try {
+                // Obtener mes y año actual
+                const now = new Date();
+                const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+                
+                // Filtrar transacciones del mes actual
+                const monthTransactions = transactions.filter(t => {
+                    const transDate = new Date(t.fecha);
+                    const transMonth = transDate.getFullYear() + '-' + String(transDate.getMonth() + 1).padStart(2, '0');
+                    return transMonth === currentMonth;
+                });
+
+                if (monthTransactions.length === 0) {
+                    return; // No hay transacciones del mes actual
+                }
+
+                // Preparar datos para Excel
+                const excelData = monthTransactions.map(t => ({
+                    'Fecha': new Date(t.fecha).toLocaleDateString('es-AR'),
+                    'Hora': new Date(t.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+                    'ID Transacción': t.transactionId,
+                    'Operador': t.operador,
+                    'Servicios': t.servicios.join(', '),
+                    'Método de Pago': t.metodoPago,
+                    'Monto': `$${t.monto}`
+                }));
+
+                // Calcular total del mes
+                const monthTotal = monthTransactions.reduce((sum, t) => {
+                    const amount = parseFloat(t.monto) || 0;
+                    return sum + amount;
+                }, 0);
+
+                // Agregar fila de total
+                excelData.push({
+                    'Fecha': '',
+                    'Hora': '',
+                    'ID Transacción': '',
+                    'Operador': '',
+                    'Servicios': 'TOTAL',
+                    'Método de Pago': '',
+                    'Monto': `$${monthTotal.toFixed(2)}`
+                });
+
+                // Crear workbook y worksheet
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(excelData);
+                
+                // Ajustar anchos de columna
+                ws['!cols'] = [
+                    { wch: 12 },  // Fecha
+                    { wch: 8 },   // Hora
+                    { wch: 15 },  // ID Transacción
+                    { wch: 12 },  // Operador
+                    { wch: 35 },  // Servicios
+                    { wch: 15 },  // Método de Pago
+                    { wch: 12 }   // Monto
+                ];
+                
+                // Nombre de la hoja
+                const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                const sheetName = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+                
+                XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+                // Generar nombre de archivo con mes y año
+                const fileName = `Cobranzas_${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}.xlsx`;
+                
+                // Descargar archivo
+                XLSX.writeFile(wb, fileName);
+                
+                console.log(`Excel exportado automáticamente: ${fileName}`);
+                
+            } catch (error) {
+                console.error('Error al exportar:', error);
+            }
+        }
+
+        // --- Precios por servicio: cargar desde Firestore ---
+        async function loadServicePrices() {
+            try {
+                const services = await servicesAPI.getAll();
+                const pricesMap = {};
+                services.forEach(s => {
+                    pricesMap[s.name] = s.price;
+                });
+                return pricesMap;
+            } catch (error) {
+                console.error('Error cargando precios desde Firestore:', error);
+                // Fallback a defaults
+                return {
+                    'Corte estándar': 2500,
+                    'Corte con barba': 3500,
+                    'Corte V.I.P.': 5000,
+                    'Tintura': 4200,
+                    'Indumentaria': 1500
+                };
+            }
+        }
+
+        let servicePrices = {};
+
+        // Actualiza los precios visibles junto a cada servicio en el formulario
+        function applyPricesToForm() {
+            document.querySelectorAll('input[name="servicio"]').forEach(cb => {
+                const label = cb.closest('label');
+                if (!label) return;
+                const nameSpan = label.querySelector('.text-gray-700');
+                if (!nameSpan) return;
+                const svcName = cb.value;
+                const price = servicePrices[svcName] || 0;
+                let priceElem = label.querySelector('.service-price');
+                if (!priceElem) {
+                    priceElem = document.createElement('span');
+                    priceElem.className = 'service-price text-sm text-gray-500 ml-2';
+                    nameSpan.appendChild(priceElem);
+                }
+                priceElem.textContent = price ? (`$${price.toFixed(2)}`) : '';
+            });
+        }
+
+        /**
+         * Calcula el total en base a los servicios seleccionados y actualiza el campo de total.
+         */
+        function updateCalculatedTotal() {
+            const selectedServiceElements = document.querySelectorAll('input[name="servicio"]:checked');
+            const selectedServices = Array.from(selectedServiceElements).map(cb => cb.value);
+            let sum = 0;
+            selectedServices.forEach(s => {
+                const price = servicePrices[s] || 0;
+                sum += price;
+            });
+            // Mostrar como número sin separadores y con dos decimales
+            totalAmountInput.value = sum > 0 ? sum.toFixed(2) : '';
+            return { sum, selectedServices };
+        }
+
+        // Actualizar total cuando cambian las selecciones
+        serviceForm.addEventListener('change', async (e) => {
+            if (e.target && e.target.name === 'servicio') {
+                // recargar precios por si se actualizaron desde otra ventana
+                servicePrices = await loadServicePrices();
+                updateCalculatedTotal();
+                applyPricesToForm();
+            }
+        });
+
+        // Persistencia del operador con Firestore
+        if (operatorSelect) {
+            // Pre-seleccionar si hay valor guardado
+            settingsAPI.get('lastOperator').then(saved => {
+                if (saved) {
+                    operatorSelect.value = saved;
+                }
+            });
+            
+            operatorSelect.addEventListener('change', () => {
+                settingsAPI.set('lastOperator', operatorSelect.value);
+            });
+        }
+
+        // Inicializar: Cargar precios y aplicarlos al formulario
+        (async () => {
+            servicePrices = await loadServicePrices();
+            applyPricesToForm();
+            
+            // Setup real-time listener para precios
+            servicesAPI.onServicesChange(async (services) => {
+                console.log('🔄 Precios actualizados en tiempo real');
+                servicePrices = {};
+                services.forEach(s => {
+                    servicePrices[s.name] = s.price;
+                });
+                applyPricesToForm();
+                updateCalculatedTotal();
+            });
+        })();
+
+        // Función auxiliar para generar un ID de transacción simulado
+        function generateTransactionId() {
+            // Genera un ID corto y aleatorio (ej: TXN-A9C3F1D)
+            return 'TXN-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+        }
+
+        // Función para manejar el click en el botón de cobro
+        chargeButton.addEventListener('click', async () => {
+            
+            const total = parseFloat(totalAmountInput.value);
+            const selectedPayment = document.querySelector('input[name="pago"]:checked');
+            const selectedServiceElements = document.querySelectorAll('input[name="servicio"]:checked');
+            const selectedServices = Array.from(selectedServiceElements).map(cb => cb.value);
+            const selectedOperator = operatorSelect ? operatorSelect.value : '';
+
+            // 1. Validaciones
+            if (selectedServices.length === 0) {
+                showMessage('Por favor, selecciona al menos un servicio.', 'error');
+                return;
+            }
+
+            if (!selectedPayment) {
+                showMessage('Por favor, selecciona un método de pago.', 'error');
+                return;
+            }
+
+            if (!selectedOperator) {
+                showMessage('Por favor, selecciona un operador.', 'error');
+                return;
+            }
+
+            if (isNaN(total) || total <= 0) {
+                showMessage('Debes ingresar un monto total válido y positivo.', 'error');
+                totalAmountInput.focus();
+                return;
+            }
+            
+            // Ocultar mensaje de error si las validaciones pasan
+            resultMessage.classList.add('hidden');
+
+            // Deshabilitar botón mientras se procesa
+            chargeButton.disabled = true;
+            chargeButton.textContent = 'Procesando...';
+
+            try {
+                // 2. Crear objeto de transacción con timestamp
+                const paymentType = selectedPayment.value;
+                const transactionId = generateTransactionId();
+                const transactionData = {
+                    id: Date.now(), // ID único basado en timestamp
+                    transactionId: transactionId,
+                    monto: total.toFixed(2),
+                    metodoPago: paymentType,
+                    servicios: selectedServices,
+                    operador: selectedOperator,
+                    fecha: new Date().toISOString() // Fecha completa en formato ISO
+                };
+
+                // 3. Guardar en Firestore
+                await addTransaction(transactionData);
+                
+                console.log("--- Cobro Realizado y Guardado en Firestore ---");
+                console.log(`Monto: $${total.toFixed(2)} | Método: ${paymentType} | ID: ${transactionId}`);
+                console.log("-----------------------------------------------");
+
+                // 4. Mostrar el Ticket de Pago
+                showPaymentTicket(total, paymentType, selectedServices, transactionId, selectedOperator);
+
+                // Limpiar el formulario después del cobro exitoso
+                serviceForm.reset();
+                totalAmountInput.value = '';
+                
+            } catch (error) {
+                console.error('Error al procesar el cobro:', error);
+                showMessage('Error al guardar la transacción. Por favor, intenta nuevamente.', 'error');
+            } finally {
+                // Rehabilitar botón
+                chargeButton.disabled = false;
+                chargeButton.innerHTML = `<span class="inline-flex items-center gap-2 justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <path d="M7 10l3 3 7-7"></path>
+                    </svg>
+                    <span>Finalizar Cobro</span>
+                </span>`;
+            }
+        });
+
+
+        /**
+         * Muestra el modal del ticket con los datos de la transacción.
+         */
+        function showPaymentTicket(total, paymentType, services, transactionId, operator) {
+            const totalFormatted = `$${total.toFixed(2)}`;
+
+            // 1. Poblar la lista de servicios con precio por línea
+            ticketServicesList.innerHTML = services.map(service => {
+                const price = servicePrices[service] || 0;
+                return `<li class="flex justify-between py-1 border-b border-dashed border-gray-100">
+                    <span class="text-gray-700">${service}</span>
+                    <span class="text-gray-700">$${price.toFixed(2)}</span>
+                </li>`;
+            }).join(''); 
+            
+            // 2. Poblar el resto de los campos
+            ticketPaymentMethod.textContent = paymentType;
+            ticketTotal.textContent = totalFormatted;
+            ticketTransactionId.textContent = transactionId;
+            ticketDate.textContent = new Date().toLocaleDateString('es-ES', { 
+                year: 'numeric', month: '2-digit', day: '2-digit', 
+                hour: '2-digit', minute: '2-digit' 
+            });
+
+            // Mostrar el operador en el ticket si se recibe
+            if (ticketOperator) {
+                ticketOperator.textContent = operator ? (`Operador: ${operator}`) : '';
+            }
+
+            // 3. Mostrar el modal
+            ticketModal.classList.remove('hidden');
+        }
+
+        // Función para cerrar el modal
+        closeTicketButton.addEventListener('click', () => {
+            ticketModal.classList.add('hidden');
+        });
+
+        // Cierra el modal al hacer click en el fondo gris
+        ticketModal.addEventListener('click', (event) => {
+            if (event.target === ticketModal) {
+                ticketModal.classList.add('hidden');
+            }
+        });
+
+
+        /**
+         * Muestra un mensaje de alerta de error en la interfaz (dentro del formulario).
+         * @param {string} message - El texto del mensaje.
+         */
+        function showMessage(message) {
+            resultMessage.textContent = message;
+            resultMessage.classList.remove('hidden');
+
+            // Ocultar mensaje de error después de 5 segundos
+            setTimeout(() => {
+                resultMessage.classList.add('hidden');
+            }, 5000);
+        }
+
+    </script>
+</body>
+</html>

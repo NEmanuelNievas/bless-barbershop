@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migración de Datos - Bless Barbershop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">🔄 Migración de Datos a Firebase</h1>
+        
+        <div class="space-y-4">
+            <p class="text-gray-600">
+                Esta herramienta migrará tus datos existentes desde localStorage a Firebase Firestore.
+            </p>
+            
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                <p class="text-yellow-700">
+                    ⚠️ <strong>Importante:</strong> Esta migración solo debe ejecutarse UNA VEZ. 
+                    Después de migrar, los datos quedarán en Firestore y podrás cerrar esta página.
+                </p>
+            </div>
+
+            <div id="status" class="space-y-2">
+                <!-- Status messages will appear here -->
+            </div>
+
+            <button 
+                id="migrateBtn"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200"
+            >
+                Iniciar Migración
+            </button>
+
+            <div id="results" class="hidden mt-6 space-y-3">
+                <h2 class="text-xl font-bold text-gray-800">Resultados:</h2>
+                <div id="resultsContent" class="space-y-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { servicesAPI, transactionsAPI, expensesAPI, clientsAPI, settingsAPI } from './firebase-config.js';
+
+        const statusDiv = document.getElementById('status');
+        const resultsDiv = document.getElementById('results');
+        const resultsContent = document.getElementById('resultsContent');
+        const migrateBtn = document.getElementById('migrateBtn');
+
+        function addStatus(message, type = 'info') {
+            const colors = {
+                info: 'bg-blue-50 text-blue-700 border-blue-200',
+                success: 'bg-green-50 text-green-700 border-green-200',
+                error: 'bg-red-50 text-red-700 border-red-200',
+                warning: 'bg-yellow-50 text-yellow-700 border-yellow-200'
+            };
+
+            const div = document.createElement('div');
+            div.className = `p-3 border-l-4 ${colors[type]}`;
+            div.textContent = message;
+            statusDiv.appendChild(div);
+            
+            // Auto-scroll
+            div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+
+        function addResult(category, count) {
+            const div = document.createElement('div');
+            div.className = 'flex justify-between items-center p-3 bg-gray-50 rounded';
+            div.innerHTML = `
+                <span class="font-medium text-gray-700">${category}</span>
+                <span class="px-3 py-1 bg-blue-600 text-white rounded-full text-sm">${count}</span>
+            `;
+            resultsContent.appendChild(div);
+        }
+
+        async function migrateData() {
+            migrateBtn.disabled = true;
+            migrateBtn.textContent = 'Migrando...';
+            migrateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            statusDiv.innerHTML = '';
+            resultsContent.innerHTML = '';
+            resultsDiv.classList.add('hidden');
+
+            try {
+                // 1. Migrar Servicios (Precios)
+                addStatus('📋 Migrando precios de servicios...', 'info');
+                const servicePrices = JSON.parse(localStorage.getItem('servicePrices') || '{}');
+                let servicesCount = 0;
+                
+                for (const [name, price] of Object.entries(servicePrices)) {
+                    await servicesAPI.save(name, price);
+                    servicesCount++;
+                    addStatus(`✓ Servicio migrado: ${name} - $${price}`, 'success');
+                }
+
+                // Si no hay servicios, crear los defaults
+                if (servicesCount === 0) {
+                    addStatus('No hay servicios guardados. Creando servicios por defecto...', 'warning');
+                    await servicesAPI.initDefaults();
+                    servicesCount = 5;
+                    addStatus('✓ Servicios por defecto creados', 'success');
+                }
+
+                addResult('Servicios migrados', servicesCount);
+
+                // 2. Migrar Transacciones
+                addStatus('💰 Migrando transacciones...', 'info');
+                const transactions = JSON.parse(localStorage.getItem('transactionsData') || '[]');
+                
+                for (const transaction of transactions) {
+                    await transactionsAPI.create(transaction);
+                    addStatus(`✓ Transacción migrada: ${transaction.transactionId || 'ID no disponible'}`, 'success');
+                }
+
+                addResult('Transacciones migradas', transactions.length);
+
+                // 3. Migrar Gastos
+                addStatus('💸 Migrando gastos...', 'info');
+                const expenses = JSON.parse(localStorage.getItem('expensesData') || '[]');
+                
+                for (const expense of expenses) {
+                    // Nota: Los comprobantes en base64 se mantienen por ahora
+                    // En el futuro se pueden migrar a Storage
+                    await expensesAPI.create({
+                        ...expense,
+                        comprobante: expense.comprobante // Mantener base64 temporalmente
+                    });
+                    addStatus(`✓ Gasto migrado: ${expense.categoria} - $${expense.monto}`, 'success');
+                }
+
+                addResult('Gastos migrados', expenses.length);
+
+                // 4. Migrar Clientes
+                addStatus('👥 Migrando clientes...', 'info');
+                const clients = JSON.parse(localStorage.getItem('clientsData') || '[]');
+                
+                for (const client of clients) {
+                    // Nota: Las fotos en base64 se mantienen por ahora
+                    // En el futuro se pueden migrar a Storage
+                    await clientsAPI.create({
+                        ...client,
+                        photo: client.photo // Mantener base64 temporalmente
+                    });
+                    addStatus(`✓ Cliente migrado: ${client.name}`, 'success');
+                }
+
+                addResult('Clientes migrados', clients.length);
+
+                // 5. Migrar Configuración
+                addStatus('⚙️ Migrando configuración...', 'info');
+                const lastOperator = localStorage.getItem('lastOperator');
+                if (lastOperator) {
+                    await settingsAPI.set('lastOperator', lastOperator);
+                    addStatus(`✓ Último operador guardado: ${lastOperator}`, 'success');
+                }
+
+                // Mostrar resultados
+                resultsDiv.classList.remove('hidden');
+                addStatus('✅ ¡Migración completada exitosamente!', 'success');
+                
+                migrateBtn.textContent = 'Migración Completa ✓';
+                migrateBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                migrateBtn.classList.add('bg-green-600');
+
+                // Mostrar mensaje de éxito con instrucciones
+                setTimeout(() => {
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'mt-6 p-4 bg-green-50 border border-green-200 rounded-lg';
+                    successDiv.innerHTML = `
+                        <h3 class="font-bold text-green-800 mb-2">✅ Datos Migrados Correctamente</h3>
+                        <p class="text-green-700 mb-3">
+                            Tus datos ahora están en Firebase Firestore. Puedes:
+                        </p>
+                        <ul class="list-disc list-inside text-green-700 space-y-1">
+                            <li>Cerrar esta página de migración</li>
+                            <li>Los datos de localStorage todavía existen (como backup)</li>
+                            <li>Todas las páginas ahora usarán Firebase automáticamente</li>
+                        </ul>
+                    `;
+                    resultsDiv.appendChild(successDiv);
+                }, 500);
+
+            } catch (error) {
+                console.error('Error durante la migración:', error);
+                addStatus(`❌ Error: ${error.message}`, 'error');
+                
+                migrateBtn.disabled = false;
+                migrateBtn.textContent = 'Reintentar Migración';
+                migrateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // Verificar datos disponibles al cargar
+        window.addEventListener('DOMContentLoaded', () => {
+            const services = JSON.parse(localStorage.getItem('servicePrices') || '{}');
+            const transactions = JSON.parse(localStorage.getItem('transactionsData') || '[]');
+            const expenses = JSON.parse(localStorage.getItem('expensesData') || '[]');
+            const clients = JSON.parse(localStorage.getItem('clientsData') || '[]');
+
+            const total = Object.keys(services).length + transactions.length + expenses.length + clients.length;
+
+            if (total === 0) {
+                const warningDiv = document.createElement('div');
+                warningDiv.className = 'bg-yellow-50 border-l-4 border-yellow-400 p-4';
+                warningDiv.innerHTML = `
+                    <p class="text-yellow-700">
+                        ⚠️ No se detectaron datos en localStorage. 
+                        ${Object.keys(services).length === 0 ? 'Se crearán servicios por defecto.' : ''}
+                    </p>
+                `;
+                statusDiv.appendChild(warningDiv);
+            } else {
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'bg-blue-50 border-l-4 border-blue-400 p-4';
+                infoDiv.innerHTML = `
+                    <p class="text-blue-700">
+                        📊 Datos detectados: ${Object.keys(services).length} servicios, 
+                        ${transactions.length} transacciones, ${expenses.length} gastos, 
+                        ${clients.length} clientes
+                    </p>
+                `;
+                statusDiv.appendChild(infoDiv);
+            }
+        });
+
+        migrateBtn.addEventListener('click', migrateData);
+    </script>
+</body>
+</html>

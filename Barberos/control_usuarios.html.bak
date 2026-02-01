@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crear / Eliminar Usuario</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<link rel="stylesheet" href="styles_shared.css">
+
+<!-- CONFIGURACIÓN DE TAILWIND (Estilo consistente) -->
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    sans: ['Inter', 'sans-serif'],
+                },
+                colors: {
+                    // Azul vibrante consistente para la marca
+                    'primary-blue': '#2563EB', 
+                    'primary-blue-dark': '#1D4ED8',
+                    'primary-blue-light': '#EFF6FF', // Azul muy claro
+                }
+            }
+        }
+    }
+</script>
+
+<style>
+    /* Estilos base y de transición (background delegado al shared stylesheet) */
+    body { }
+
+    /* Estilo Dinámico - Sombra azulada en hover */
+    .dynamic-shadow {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .dynamic-shadow:hover {
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); /* Sombra azul */
+        transform: translateY(-2px);
+    }
+    
+    /* Estilo para los formularios en línea (Animación JS/CSS) */
+    .inline-form {
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out;
+    }
+    .inline-form.active {
+        max-height: 500px; /* Suficiente altura para mostrar el contenido */
+        opacity: 1;
+        padding-top: 1rem;
+        /* Estilo dinámico extra al activarse */
+        box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    }
+</style>
+
+</head>
+<body class="min-h-screen flex flex-col items-center p-4">
+
+ <!-- Título Principal de la Aplicación -->
+  <h1 class="neon-title text-4xl font-extrabold mb-6 tracking-wide">
+            BLESS BARBERSHOP
+        </h1>
+
+<!-- Contenedor Principal: Sombra elevada para un aspecto moderno -->
+<div class="w-full max-w-2xl bg-white shadow-2xl rounded-xl p-6 md:p-8 border-t-8 border-primary-blue">
+
+    <!-- Título de la Ventana Actual (Usando la nueva clase text-primary-blue) -->
+    <h2 class="text-2xl font-bold mb-6 text-center text-primary-blue">Crear / Eliminar Usuario</h2>
+
+    <!-- Botón Volver (simulación de navegación) -->
+    <a href="index_admin.html" class="text-sm text-gray-500 hover:text-primary-blue transition duration-150 mb-4 inline-block">← Volver al Menú Principal</a>
+
+    <!-- Lista de Usuarios Existentes -->
+    <div id="userListContainer" class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+        <h3 class="text-xl font-semibold mb-3 border-b pb-2 text-gray-700">Lista de Usuarios</h3>
+        <ul id="userList" class="space-y-2">
+            <!-- Los usuarios se renderizan aquí -->
+        </ul>
+    </div>
+    
+    <!-- Contenedor de Botones de Acción (Usando las nuevas clases bg-primary-blue/hover y sombra) -->
+    <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mt-6">
+        <button onclick="showCreateForm()" 
+                class="flex-1 py-3 px-4 rounded-lg text-white font-semibold bg-primary-blue hover:bg-primary-blue-dark transition duration-300 shadow-lg hover:shadow-xl dynamic-shadow">
+            Crear Usuario
+        </button>
+        <button onclick="showDeleteForm()" 
+                class="flex-1 py-3 px-4 rounded-lg text-white font-semibold bg-red-500 hover:bg-red-600 transition duration-300 shadow-lg hover:shadow-xl dynamic-shadow">
+            Eliminar Usuario
+        </button>
+    </div>
+
+    <!-- 1. Formulario para Crear Usuario (Aparece en línea) -->
+    <!-- Se actualiza el color de fondo a un verde más claro, pero con un borde azul para el enfoque dinámico -->
+    <div id="createFormSection" class="inline-form border-l-4 border-green-500 bg-white rounded-xl mt-4 p-5 shadow-lg">
+        <h3 class="text-xl font-bold text-green-700 mb-4">Registro de Nuevo Usuario</h3>
+        <div class="space-y-4">
+            <div>
+                <label for="newUsername" class="block text-sm font-medium text-gray-700">Nombre de Usuario</label>
+                <input type="text" id="newUsername" placeholder="Ej: cristian.admin" required
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-blue focus:border-primary-blue transition duration-200">
+            </div>
+            <div>
+                <label for="newPassword" class="block text-sm font-medium text-gray-700">Contraseña</label>
+                <input type="password" id="newPassword" placeholder="Contraseña segura" required
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-blue focus:border-primary-blue transition duration-200">
+            </div>
+            <button onclick="createUser()"
+                    class="w-full py-2 px-4 rounded-lg text-white font-semibold bg-green-500 hover:bg-green-600 transition duration-300 mt-4 dynamic-shadow">
+                Guardar Nuevo Usuario
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. Formulario para Eliminar Usuario (Aparece en línea) -->
+    <div id="deleteFormSection" class="inline-form border-l-4 border-red-500 bg-white rounded-xl mt-4 p-5 shadow-lg">
+        <h3 class="text-xl font-bold text-red-700 mb-4">Seleccionar Usuarios a Eliminar</h3>
+        
+        <div id="deleteUserListContainer" class="max-h-60 overflow-y-auto space-y-2 mb-4">
+            <!-- Lista de usuarios con checkboxes para eliminar -->
+        </div>
+
+        <button onclick="confirmDelete()"
+                class="w-full py-2 px-4 rounded-lg text-white font-semibold bg-red-500 hover:bg-red-600 transition duration-300 mt-2 dynamic-shadow">
+            Confirmar Eliminación
+        </button>
+    </div>
+
+</div> <!-- Fin del Contenedor Principal -->
+
+<!-- Modal de Notificación -->
+<div id="notificationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm transform transition-all duration-300 scale-100">
+        <h3 id="notificationTitle" class="text-lg font-bold mb-3 text-gray-800"></h3>
+        <p id="notificationMessage" class="text-gray-600 mb-4"></p>
+        <!-- Usando las nuevas clases bg-primary-blue/hover y sombra -->
+        <button onclick="closeNotificationModal()" class="w-full py-2 rounded-lg text-white font-semibold bg-primary-blue hover:bg-primary-blue-dark transition duration-200 dynamic-shadow">
+            Aceptar
+        </button>
+    </div>
+</div>
+
+
+<script>
+    // --- Datos Simulados ---
+    let usersData = [
+        { id: 1, username: 'admin' },
+        { id: 2, username: 'barbero_juan' },
+        { id: 3, username: 'recepcionista_ana' }
+    ];
+    let nextUserId = 4; // ID para nuevos usuarios
+    
+    // --- Referencias DOM ---
+    const userList = document.getElementById('userList');
+    const deleteUserListContainer = document.getElementById('deleteUserListContainer');
+    const createFormSection = document.getElementById('createFormSection');
+    const deleteFormSection = document.getElementById('deleteFormSection');
+
+    // --- Funciones de Utilidad y Renderizado ---
+
+    /**
+     * Muestra el modal de notificación con un mensaje.
+     * @param {string} title - Título del modal.
+     * @param {string} message - Mensaje a mostrar.
+     */
+    function showNotificationModal(title, message) {
+        document.getElementById('notificationTitle').textContent = title;
+        document.getElementById('notificationMessage').textContent = message;
+        document.getElementById('notificationModal').classList.remove('hidden');
+    }
+
+    /** Cierra el modal de notificación. */
+    function closeNotificationModal() {
+        document.getElementById('notificationModal').classList.add('hidden');
+    }
+
+    /** Renderiza la lista principal de usuarios o la lista con checkboxes. */
+    function renderUserList(isDeleteMode = false) {
+        const container = isDeleteMode ? deleteUserListContainer : userList;
+        container.innerHTML = '';
+        
+        if (usersData.length === 0) {
+            container.innerHTML = `<li class="text-gray-500 italic">No hay usuarios registrados.</li>`;
+            return;
+        }
+
+        usersData.forEach(user => {
+            const li = document.createElement('li');
+            
+            // Aplicamos la clase de sombra dinámica a los elementos de la lista
+            li.className = 'flex items-center justify-between p-2 rounded-lg border-b bg-white hover:bg-primary-blue-light dynamic-shadow';
+            
+            if (isDeleteMode) {
+                li.innerHTML = `
+                    <label class="flex items-center space-x-3 w-full cursor-pointer p-1 rounded-md transition duration-150">
+                        <input type="checkbox" name="userIds" value="${user.id}" class="form-checkbox h-5 w-5 text-red-600 rounded focus:ring-red-500">
+                        <span class="text-gray-800 font-medium">${user.username}</span>
+                    </label>
+                `;
+                // Removemos la sombra dinámica del modo eliminación para evitar conflicto con el hover del label
+                li.classList.remove('dynamic-shadow');
+                li.classList.remove('hover:bg-primary-blue-light');
+                li.classList.add('bg-red-50');
+            } else {
+                li.innerHTML = `<span class="text-gray-800 font-medium">${user.username}</span>`;
+            }
+            container.appendChild(li);
+        });
+    }
+
+    // --- Lógica de la Interfaz ---
+
+    /** Muestra/Oculta la sección de Creación de Usuario. */
+    function showCreateForm() {
+        // Oculta todas las demás secciones primero
+        deleteFormSection.classList.remove('active');
+
+        // Alterna la visibilidad del formulario de creación
+        createFormSection.classList.toggle('active');
+
+        // Si se abre, enfoca el primer campo
+        if (createFormSection.classList.contains('active')) {
+            document.getElementById('newUsername').focus();
+        }
+    }
+
+    /** Muestra/Oculta la sección de Eliminación de Usuario. */
+    function showDeleteForm() {
+        // Oculta todas las demás secciones primero
+        createFormSection.classList.remove('active');
+
+        // Renderiza la lista para eliminación y alterna la visibilidad
+        if (usersData.length > 0) {
+             renderUserList(true); // Renderiza con checkboxes
+        } else {
+             deleteUserListContainer.innerHTML = `<p class="text-gray-500 italic p-3">No hay usuarios para eliminar.</p>`;
+        }
+        deleteFormSection.classList.toggle('active');
+    }
+
+    /** Lógica para crear un nuevo usuario. */
+    function createUser() {
+        const usernameInput = document.getElementById('newUsername');
+        const passwordInput = document.getElementById('newPassword');
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        if (!username || !password) {
+            showNotificationModal("Error", "Por favor, complete todos los campos (Nombre de Usuario y Contraseña).");
+            return;
+        }
+
+        // Simulación de creación de usuario
+        const newUser = {
+            id: nextUserId++,
+            username: username
+        };
+        usersData.push(newUser);
+
+        // Limpiar campos y cerrar formulario
+        usernameInput.value = '';
+        passwordInput.value = '';
+        createFormSection.classList.remove('active');
+
+        // Actualizar la vista
+        renderUserList();
+        showNotificationModal("Éxito", `El usuario "${username}" ha sido creado correctamente.`);
+    }
+
+    /** Lógica para confirmar la eliminación de usuarios seleccionados. */
+    function confirmDelete() {
+        const checkboxes = document.querySelectorAll('#deleteUserListContainer input[name="userIds"]:checked');
+        
+        if (checkboxes.length === 0) {
+            showNotificationModal("Advertencia", "Debe seleccionar al menos un usuario para eliminar.");
+            return;
+        }
+
+        const idsToDelete = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        
+        // Filtra el array de usuarios para eliminar los seleccionados
+        usersData = usersData.filter(user => !idsToDelete.includes(user.id));
+        
+        // Cerrar formulario de eliminación
+        deleteFormSection.classList.remove('active');
+
+        // Actualizar la vista
+        renderUserList();
+        showNotificationModal("Éxito", `${idsToDelete.length} usuario(s) eliminado(s) correctamente.`);
+    }
+
+    // --- Inicialización ---
+
+    /** Función que se ejecuta al cargar la página. */
+    window.onload = () => {
+        renderUserList(); // Inicializa la lista al cargar la página
+    };
+</script>
+
+</body>
+</html>

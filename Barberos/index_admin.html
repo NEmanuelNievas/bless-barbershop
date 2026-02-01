@@ -1,0 +1,281 @@
+
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Principal</title>
+    <!-- Carga de Tailwind CSS para un diseño moderno y responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles_shared.css">
+    
+    <!-- Configuración personalizada de Tailwind para el color azul y la fuente Inter -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-blue': '#2563EB', // Un azul vibrante
+                        'primary-blue-dark': '#1D4ED8',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Estilo base para el cuerpo y el fondo: moderno, azul profundo con destellos radiales blancos */
+        :root{
+            /* Aclarado ligeramente para armonizar con el azul del menú (bg-primary-blue) */
+            --bg-dark: #072042; /* azul oscuro, más claro que antes */
+            --bg-mid:  #123b86; /* azul intermedio, acercado al primary-blue */
+            --accent:  rgba(255,255,255,0.10);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            margin: 0;
+
+            /* Capas: dos focos radiales blancos suaves sobre un degradado vertical azul */
+            background-color: var(--bg-dark);
+            background-image:
+                radial-gradient(600px 420px at 12% 18%, rgba(255,255,255,0.18), rgba(255,255,255,0.05) 25%, transparent 45%),
+                radial-gradient(420px 320px at 82% 78%, rgba(255,255,255,0.12), rgba(255,255,255,0.03) 22%, transparent 48%),
+                linear-gradient(180deg, var(--bg-mid) 0%, var(--bg-dark) 70%);
+
+            background-attachment: fixed; /* mantiene el fondo estable al hacer scroll */
+            background-repeat: no-repeat;
+            color: #e6eef8; /* tono claro para texto por defecto sobre el fondo */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Efecto neón para el título principal (estático, sin animación) */
+        .neon-title {
+            color: #ffffff;
+            /* varias capas de glow para profundidad */
+            text-shadow:
+                0 0 4px rgba(255,255,255,0.95),
+                0 0 10px rgba(99,102,241,0.65),
+                0 0 18px rgba(79,70,229,0.45),
+                0 0 30px rgba(79,70,229,0.30);
+            position: relative;
+        }
+
+        /* Estilo para el contenedor principal centrado */
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+        }
+
+        /* Clase para el fondo dinámico y esquinas redondeadas del menú */
+        .menu-item-hover:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        /* Iconos en las opciones del menú */
+        .menu-item-hover svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            color: inherit; /* usar color del texto del enlace */
+        }
+        .menu-item-hover .menu-text {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Título de la Barbershop -->
+        <h1 class="neon-title text-4xl font-extrabold mb-6 tracking-wide">
+            BLESS BARBERSHOP
+        </h1>
+
+        <!-- Contenedor principal de la aplicación: Centrado y con ancho limitado -->
+        <div class="w-full max-w-md bg-white shadow-2xl rounded-xl p-6 md:p-8 space-y-8">
+            
+            <!-- SECCIÓN DE BIENVENIDA -->
+                <header class="text-center">
+                <!-- Título principal con color azul prominente -->
+                <h1 class="text-3xl font-bold text-primary-blue mb-2">
+                    Bienvenido, Usuario
+                </h1>
+                <p class="text-gray-500">¿Qué operación deseas realizar hoy?</p>
+
+                <!-- (Generador de frase bíblica eliminado) -->
+            </header>
+
+            <!-- SECCIÓN DEL MENÚ DESPLEGABLE -->
+            <section class="relative">
+                
+                <!-- Botón Desplegable (Elemento principal) -->
+        <button id="menuButton" 
+            class="w-full flex justify-between items-center py-4 px-6 
+                   bg-blue-600 hover:bg-blue-700 text-white 
+                   font-semibold rounded-lg shadow-lg 
+                   transition duration-300 ease-in-out transform hover:scale-[1.01]
+                   focus:outline-none focus:ring-4 focus:ring-blue-600/50">
+                    <span>Seleccionar Opción</span>
+                    <!-- Icono de flecha (SVG inline) -->
+                    <svg id="menuIcon" class="w-5 h-5 transition-transform duration-300" 
+                         xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+
+                <!-- Menú Desplegable (Contenido) -->
+          <div id="dropdownMenu" 
+            class="absolute w-full mt-2 bg-blue-600 rounded-lg shadow-xl z-10 hidden 
+                overflow-hidden transform transition-all duration-300 ease-in-out 
+                max-h-0 opacity-0" 
+                     style="transition-property: max-height, opacity;">
+                    
+              <nav class="text-white divide-y divide-blue-700/50">
+                        <!-- Iteración sobre las opciones del menú (con iconos) -->
+                        <!-- 'Ver rendimientos' option removed -->
+
+                        <a href="gastos_admin.html" class="block px-6 py-3 menu-item-hover flex items-center gap-3">
+                            <!-- Icon: wallet / card -->
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                                <path d="M16 12h.01"></path>
+                            </svg>
+                            <span class="menu-text">Realizar pago</span>
+                        </a>
+
+                        <a href="cobranza.html" class="block px-6 py-3 menu-item-hover flex items-center gap-3">
+                            <!-- Icon: coin / money -->
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="7"></circle>
+                                <path d="M12 8v8"></path>
+                                <path d="M9 10h6"></path>
+                            </svg>
+                            <span class="menu-text">Cobrar corte</span>
+                        </a>
+
+                        <a href="agregar_clientes.html" class="block px-6 py-3 menu-item-hover flex items-center gap-3">
+                            <!-- Icon: user plus -->
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M16 11c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3z"></path>
+                                <path d="M6 21v-2a4 4 0 014-4h1"></path>
+                                <path d="M19 16v6"></path>
+                                <path d="M22 19h-6"></path>
+                            </svg>
+                            <span class="menu-text">Agregar clientes</span>
+                        </a>
+
+
+                        <!-- 'Ver cortes realizados' option removed -->
+
+                        <a href="turnos.html" class="block px-6 py-3 menu-item-hover flex items-center gap-3">
+                            <!-- Icon: calendar -->
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+                                <path d="M16 3v4"></path>
+                                <path d="M8 3v4"></path>
+                                <path d="M3 11h18"></path>
+                            </svg>
+                            <span class="menu-text">Ver turnos del día de hoy</span>
+                        </a>
+
+                        <!-- 'Administrar Usuario' option removed -->
+                    </nav>
+
+                </div>
+
+            </section>
+            
+            <!-- Vínculo para Cerrar Sesión -->
+            <div class="pt-4 text-center">
+                <a href="login.html" class="text-sm text-gray-500 hover:text-red-600 transition duration-150 ease-in-out font-medium">
+                    Cerrar Sesión
+                </a>
+            </div>
+
+            <!-- Espacio para otros elementos o información -->
+            <footer class="text-center pt-4">
+                <p class="text-sm text-gray-400">Panel de Acceso Rápido v1.0</p>
+            </footer>
+
+        </div>
+    </div>
+
+    <script>
+        // Lógica de JavaScript para el menú desplegable dinámico
+        
+        const menuButton = document.getElementById('menuButton');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        const menuIcon = document.getElementById('menuIcon');
+
+        // Función para manejar el despliegue/plegado del menú
+        function toggleMenu() {
+            const isHidden = dropdownMenu.classList.contains('hidden');
+
+            if (isHidden) {
+                // Mostrar el menú
+                dropdownMenu.classList.remove('hidden');
+                
+                // Establecer la altura máxima para la transición suave
+                // Esto simula el efecto dinámico al desplegar
+                dropdownMenu.style.maxHeight = dropdownMenu.scrollHeight + "px";
+                dropdownMenu.style.opacity = '1';
+                
+                // Rotar el icono para indicar que está abierto
+                menuIcon.style.transform = 'rotate(180deg)';
+
+            } else {
+                // Ocultar el menú (iniciando la animación de cierre)
+                dropdownMenu.style.maxHeight = '0';
+                dropdownMenu.style.opacity = '0';
+                
+                // Rotar el icono a su posición original
+                menuIcon.style.transform = 'rotate(0deg)';
+
+                // Una vez que la transición termine, añadir la clase 'hidden' para accesibilidad
+                setTimeout(() => {
+                    if (dropdownMenu.style.maxHeight === '0px') {
+                        dropdownMenu.classList.add('hidden');
+                    }
+                }, 300); // 300ms debe coincidir con la duración de la transición en CSS
+            }
+        }
+
+        // Asignar el listener al botón
+        menuButton.addEventListener('click', toggleMenu);
+
+        // Ocultar el menú si se hace clic fuera de él
+        document.addEventListener('click', (event) => {
+            if (!dropdownMenu.contains(event.target) && !menuButton.contains(event.target)) {
+                // Si está visible, ciérralo
+                if (!dropdownMenu.classList.contains('hidden')) {
+                    toggleMenu();
+                }
+            }
+        });
+
+        // Opcional: Cerrar el menú después de seleccionar una opción (simulando navegación)
+        document.querySelectorAll('#dropdownMenu a').forEach(item => {
+            item.addEventListener('click', (event) => {
+                // En una app real, aquí se ejecutaría la navegación (ej. window.location.href = event.target.href)
+                
+                // Simulación: cerrar menú
+                if (!dropdownMenu.classList.contains('hidden')) {
+                    toggleMenu();
+                }
+            });
+        });
+
+    </script>
+    <!-- Generador de versículos eliminado -->
+</body>
+</html>

@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rendimiento de empleados</title>
+    <!-- Carga de Tailwind CSS para un diseño moderno y responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles_shared.css">
+    
+    <!-- Configuración personalizada de Tailwind para el color azul y la fuente Inter -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-blue': '#2563EB', // Un azul vibrante
+                        'primary-blue-dark': '#1D4ED8',
+                        'success-green': '#10B981', // Verde para éxito
+                        'error-red': '#EF4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Estilo base para el cuerpo y el fondo (delegado al shared stylesheet) */
+        body { font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+        /* Estilo para el contenedor principal centrado */
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; /* Centra el formulario verticalmente */
+            padding: 1.5rem;
+        }
+
+        /* Estilo para los checkboxes y radio buttons */
+        input[type="checkbox"], input[type="radio"] {
+            /* Personalización del color de Tailwind para inputs */
+            accent-color: var(--primary-blue, #2563EB); 
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        /* Clase de estilo para las opciones de la lista */
+        .option-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+
+        .option-item:hover {
+            background-color: #F8FAFC; /* Gris claro al pasar el mouse */
+        }
+        
+        /* Estilos específicos para impresión (oculta elementos innecesarios) */
+        @media print {
+            .app-container, .mt-6 {
+                display: none;
+            }
+            #ticketModal {
+                /* Asegura que el modal sea lo único visible y ocupe el espacio */
+                position: static !important;
+                display: block !important;
+                padding: 0 !important;
+                background: none !important;
+            }
+            #ticketModal > div {
+                box-shadow: none !important;
+                border: 1px solid #000;
+                max-width: 300px; /* Tamaño típico de ticket */
+                margin: 0 auto;
+            }
+            .print-hidden {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ######################################################################## -->
+    <!--                                  MODAL TICKET                            -->
+    <!-- ######################################################################## -->
+    <div id="ticketModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden transform transition duration-300">
+            
+            <!-- Contenido del Ticket -->
+            <div class="p-6 space-y-4 text-sm">
+                <header class="text-center border-b pb-3 border-dashed border-gray-300">
+                    <h3 class="text-xl font-bold text-primary-blue">TICKET DE PAGO</h3>
+                    <p class="text-xs text-gray-500">BLESS BARBERSHOP</p>
+                    <p id="ticketDate" class="text-xs text-gray-500 mt-1"></p>
+                </header>
+
+                <!-- 1. Servicios -->
+                <div class="space-y-2">
+                    <p class="font-semibold text-gray-800">Detalle de Servicios:</p>
+                    <ul id="ticketServicesList" class="list-none pl-0 text-xs space-y-1">
+                        <!-- El JS poblará la lista aquí -->
+                    </ul>
+                </div>
+
+                <!-- 2. Resumen de Pago -->
+                <div class="space-y-2 border-t pt-3 border-gray-200">
+                    <div class="flex justify-between font-medium text-gray-700 items-center">
+                        <span class="flex items-center gap-2">
+                            <!-- Payment icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="2" y="7" width="20" height="10" rx="2"></rect>
+                                <path d="M2 11h20"></path>
+                            </svg>
+                            Método de Pago:
+                        </span>
+                        <span id="ticketPaymentMethod" class="text-primary-blue-dark font-semibold"></span>
+                    </div>
+                </div>
+                
+                <!-- 3. Total -->
+                <div class="flex justify-between text-lg font-bold text-gray-900 border-t pt-2 border-dashed border-gray-300 items-center">
+                    <span class="flex items-center gap-2">
+                        <!-- Total icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9"></circle>
+                            <path d="M12 8v8"></path>
+                            <path d="M9 11h6"></path>
+                        </svg>
+                        TOTAL COBRADO:
+                    </span>
+                    <span id="ticketTotal" class="text-success-green"></span>
+                </div>
+
+                <!-- 4. Número de Transacción -->
+                <div class="border-t pt-3 text-center border-gray-200">
+                    <p class="text-xs text-gray-500">Nro. de Transacción:</p>
+                    <p id="ticketTransactionId" class="text-base font-mono text-gray-900 font-bold"> 
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline-block mr-2" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7"></path>
+                            <path d="M7 10l5-5 5 5"></path>
+                        </svg>
+                    </p>
+                    <p id="ticketTransactionId" class="text-base font-mono text-gray-900 font-bold"></p>
+                </div>
+            </div>
+
+            <!-- Botones de Acción (Ocultos en impresión) -->
+            <div class="p-4 bg-gray-50 flex justify-end space-x-3 print-hidden">
+                <button onclick="window.print()" class="px-4 py-2 text-sm bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg transition inline-flex items-center gap-2">
+                    <!-- Printer icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1F2937" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M6 9V2h12v7"></path>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-3h20v3a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8" rx="2"></rect>
+                    </svg>
+                    Imprimir
+                </button>
+                <button id="closeTicketButton" class="px-4 py-2 text-sm bg-primary-blue hover:bg-primary-blue-dark text-white font-semibold rounded-lg transition inline-flex items-center gap-2">
+                    <!-- X / close icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- ######################################################################## -->
+
+
+    <!-- ######################################################################## -->
+    <!--                                  PÁGINA PRINCIPAL                          -->
+    <!-- ######################################################################## -->
+    <div class="app-container">
+
+        <!-- Título de la Barbershop -->
+        <h1 class="neon-title text-4xl font-extrabold mb-8 tracking-wide">
+            BLESS BARBERSHOP
+        </h1>
+
+        <!-- Contenedor principal (plantilla) -->
+        <div class="w-full max-w-lg bg-white shadow-2xl rounded-xl p-6 md:p-10 space-y-6">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold text-primary-blue mb-2 tracking-wide">Rendimiento de empleados</h2>
+            </div>
+
+            <!-- Metrics: cortes, comisión, gastos, ventas insumos -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="p-3 border rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-primary-blue/10 rounded-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.5 8.5L15.5 15.5"/><path d="M15.5 8.5L8.5 15.5"/></svg>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold" id="cutsCount">0</div>
+                            <div class="text-sm text-gray-600">Cortes realizados por otros barberos</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 border rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-primary-blue/10 rounded-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8"/><path d="M9 11h6"/></svg>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold text-success-green" id="commissionEarned">$0.00</div>
+                                <div class="text-sm text-gray-600">Dinero ganado (por comisión)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 border rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-primary-blue/10 rounded-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M21 3L3 21"/></svg>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold" id="expensesCount">0</div>
+                            <div class="text-sm text-gray-600">Cantidad de gastos</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 border rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-primary-blue/10 rounded-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 1v22"/>
+                                <path d="M17 5H9a3 3 0 1 0 0 6h6a3 3 0 1 1 0 6H7"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-red-600" id="totalExpenses">$0.00</div>
+                            <div class="text-sm text-gray-600">Dinero gastado</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 border rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-primary-blue/10 rounded-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><circle cx="12" cy="14" r="3"/></svg>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-primary-blue" id="suppliesRevenue">$0.00</div>
+                            <div class="text-sm text-gray-600">Dinero recaudado por ventas de insumos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detail per barber (small list) -->
+            <!-- Commission control: moved here so stays inside the white panel and aligns responsively -->
+            <div id="commissionControl" class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <label for="commissionInput" class="text-sm text-gray-600">Comisión %</label>
+                    <input id="commissionInput" type="number" min="0" max="100" value="20" class="w-24 p-2 border rounded text-right" />
+                </div>
+                <div class="text-right">
+                    <button id="recalcBtn" class="px-4 py-2 bg-primary-blue text-white rounded">Recalcular</button>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <h3 class="text-sm font-semibold text-gray-700 mb-2">Detalle por barbero</h3>
+                <div id="barberList" class="space-y-2 text-sm text-gray-700"></div>
+            </div>
+        </div>
+
+        <!-- Vínculo para volver (simulación de navegación) -->
+        <a href="index_admin.html" class="mt-6 text-sm text-primary-blue hover:text-primary-blue-dark transition duration-150 ease-in-out font-medium">
+            Volver a la Página Principal
+        </a>
+
+    </div>
+
+    <script type="module">
+        // --- FIREBASE IMPORTS ---
+        import { transactionsAPI, expensesAPI } from './firebase-config.js';
+        
+        // Lógica de JavaScript para el Ticket de Pago y la Transacción
+        
+        const totalAmountInput = document.getElementById('totalAmount');
+        const chargeButton = document.getElementById('chargeButton');
+        const resultMessage = document.getElementById('resultMessage');
+        const serviceForm = document.getElementById('serviceForm');
+        
+        const ticketModal = document.getElementById('ticketModal');
+        const closeTicketButton = document.getElementById('closeTicketButton');
+        const ticketServicesList = document.getElementById('ticketServicesList');
+        const ticketPaymentMethod = document.getElementById('ticketPaymentMethod');
+        const ticketTotal = document.getElementById('ticketTotal');
+        const ticketTransactionId = document.getElementById('ticketTransactionId');
+        const ticketDate = document.getElementById('ticketDate');
+
+        // Función auxiliar para generar un ID de transacción simulado
+        function generateTransactionId() {
+            // Genera un ID corto y aleatorio (ej: TXN-A9C3F1D)
+            return 'TXN-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+        }
+
+        // --- Rendimiento metrics sample data and logic ---
+        const sampleBarbers = [
+            { name: 'Juan', cuts: 24, avgPrice: 400 },
+            { name: 'María', cuts: 18, avgPrice: 450 },
+            { name: 'Diego', cuts: 12, avgPrice: 350 }
+        ];
+
+        /**
+         * Carga los gastos desde Firestore
+         * @returns {Promise<Array>} Array de objetos de gastos
+         */
+        async function loadExpenses() {
+            try {
+                return await expensesAPI.getAll();
+            } catch (error) {
+                console.error('Error al cargar gastos:', error);
+                return [];
+            }
+        }
+
+        /**
+         * Carga las transacciones de cobranza desde Firestore
+         * @returns {Promise<Array>} Array de objetos de transacciones
+         */
+        async function loadTransactions() {
+            try {
+                return await transactionsAPI.getAll();
+            } catch (error) {
+                console.error('Error al cargar transacciones:', error);
+                return [];
+            }
+        }
+
+        // render function for rendimiento panel
+        async function computeRendimiento() {
+            // Mostrar estado de carga
+            document.getElementById('cutsCount').textContent = '...';
+            document.getElementById('commissionEarned').textContent = '...';
+            document.getElementById('expensesCount').textContent = '...';
+            document.getElementById('totalExpenses').textContent = '...';
+            
+            // Cargar transacciones reales desde Firestore
+            const transactions = await loadTransactions();
+            const totalCuts = transactions.length;
+            
+            // Calcular ingresos totales por cortes
+            const totalCutRevenue = transactions.reduce((sum, t) => {
+                const amount = parseFloat(t.monto) || 0;
+                return sum + amount;
+            }, 0);
+            
+            const commissionPct = parseFloat(document.getElementById('commissionInput')?.value || '0');
+            const commissionEarned = totalCutRevenue * (commissionPct / 100);
+            
+            // Cargar gastos reales desde Firestore
+            const expenses = await loadExpenses();
+            const expensesCount = expenses.length;
+            const totalExpenses = expenses.reduce((sum, expense) => {
+                const amount = parseFloat(expense.amount) || 0;
+                return sum + amount;
+            }, 0);
+            const suppliesRevenue = 0; // Sin datos de insumos por ahora
+
+            document.getElementById('cutsCount').textContent = totalCuts;
+            document.getElementById('commissionEarned').textContent = `$${commissionEarned.toFixed(2)}`;
+            document.getElementById('expensesCount').textContent = expensesCount;
+            document.getElementById('totalExpenses').textContent = `$${totalExpenses.toFixed(2)}`;
+            document.getElementById('suppliesRevenue').textContent = `$${suppliesRevenue.toFixed(2)}`;
+
+            // Agrupar transacciones por operador
+            const operatorStats = {};
+            transactions.forEach(t => {
+                const operator = t.operador || 'Sin operador';
+                if (!operatorStats[operator]) {
+                    operatorStats[operator] = { cuts: 0, revenue: 0 };
+                }
+                operatorStats[operator].cuts++;
+                operatorStats[operator].revenue += parseFloat(t.monto) || 0;
+            });
+
+            // Generar lista por operador
+            const listHtml = Object.keys(operatorStats).map(operator => {
+                const stats = operatorStats[operator];
+                const comm = stats.revenue * (commissionPct / 100);
+                return `<div class="flex justify-between p-2 border rounded-md">
+                    <div>${operator} <span class="text-sm text-gray-500">(${stats.cuts} cortes)</span></div>
+                    <div class="text-right"><div class="text-sm">$${stats.revenue.toFixed(2)}</div><div class="text-primary-blue font-semibold">Comisión: $${comm.toFixed(2)}</div></div>
+                </div>`;
+            }).join('');
+            
+            document.getElementById('barberList').innerHTML = listHtml || '<div class="text-gray-500 text-sm">No hay datos de cortes aún</div>';
+        }
+
+        // wire recalc button inside rendimiento panel
+        const recalcRendBtn = document.getElementById('recalcBtn');
+        if (recalcRendBtn) recalcRendBtn.addEventListener('click', computeRendimiento);
+        // initial
+        computeRendimiento();
+
+        // Función para manejar el click en el botón de cobro
+        chargeButton.addEventListener('click', () => {
+            
+            const total = parseFloat(totalAmountInput.value);
+            const selectedPayment = document.querySelector('input[name="pago"]:checked');
+            const selectedServiceElements = document.querySelectorAll('input[name="servicio"]:checked');
+            const selectedServices = Array.from(selectedServiceElements).map(cb => cb.value);
+
+            // 1. Validaciones
+            if (selectedServices.length === 0) {
+                showMessage('Por favor, selecciona al menos un servicio.', 'error');
+                return;
+            }
+
+            if (!selectedPayment) {
+                showMessage('Por favor, selecciona un método de pago.', 'error');
+                return;
+            }
+
+            if (isNaN(total) || total <= 0) {
+                showMessage('Debes ingresar un monto total válido y positivo.', 'error');
+                totalAmountInput.focus();
+                return;
+            }
+            
+            // Ocultar mensaje de error si las validaciones pasan
+            resultMessage.classList.add('hidden');
+
+            // 2. Simulación de la operación de cobro y generación de ID
+            const paymentType = selectedPayment.value;
+            const transactionId = generateTransactionId();
+
+            // En un entorno real, aquí se enviarían los datos a Firestore
+            console.log("--- Cobro Realizado y Enviado al Sistema ---");
+            console.log(`Monto: $${total.toFixed(2)} | Método: ${paymentType} | ID: ${transactionId}`);
+            console.log("----------------------------------------------");
+
+            // 3. Mostrar el Ticket de Pago
+            showPaymentTicket(total, paymentType, selectedServices, transactionId);
+
+            // Opcional: Limpiar el formulario después del cobro exitoso
+            serviceForm.reset();
+            totalAmountInput.value = '';
+        });
+
+
+        /**
+         * Muestra el modal del ticket con los datos de la transacción.
+         */
+        function showPaymentTicket(total, paymentType, services, transactionId) {
+            const totalFormatted = `$${total.toFixed(2)}`;
+
+            // 1. Poblar la lista de servicios
+            ticketServicesList.innerHTML = services.map(service => 
+                `<li class="flex justify-between py-1 border-b border-dashed border-gray-100">
+                    <span class="text-gray-700">${service}</span>
+                    <span class="text-gray-700">--</span>
+                </li>`).join(''); 
+            
+            // 2. Poblar el resto de los campos
+            ticketPaymentMethod.textContent = paymentType;
+            ticketTotal.textContent = totalFormatted;
+            ticketTransactionId.textContent = transactionId;
+            ticketDate.textContent = new Date().toLocaleDateString('es-ES', { 
+                year: 'numeric', month: '2-digit', day: '2-digit', 
+                hour: '2-digit', minute: '2-digit' 
+            });
+
+            // 3. Mostrar el modal
+            ticketModal.classList.remove('hidden');
+        }
+
+        // Función para cerrar el modal
+        closeTicketButton.addEventListener('click', () => {
+            ticketModal.classList.add('hidden');
+        });
+
+        // Cierra el modal al hacer click en el fondo gris
+        ticketModal.addEventListener('click', (event) => {
+            if (event.target === ticketModal) {
+                ticketModal.classList.add('hidden');
+            }
+        });
+
+
+        /**
+         * Muestra un mensaje de alerta de error en la interfaz (dentro del formulario).
+         * @param {string} message - El texto del mensaje.
+         */
+        function showMessage(message) {
+            resultMessage.textContent = message;
+            resultMessage.classList.remove('hidden');
+
+            // Ocultar mensaje de error después de 5 segundos
+            setTimeout(() => {
+                resultMessage.classList.add('hidden');
+            }, 5000);
+        }
+
+    </script>
+</body>
+</html>

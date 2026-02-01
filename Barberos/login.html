@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bless Barbershop - Inicio de Sesión</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles_shared.css">
+    
+    <!-- CONFIGURACIÓN DE TAILWIND (Estilo consistente) -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-blue': '#2563EB', 
+                        'primary-blue-dark': '#1D4ED8',
+                        'primary-blue-light': '#EFF6FF',
+                        'primary-red': '#EF4444',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Fondo radial suave: azul en la parte superior, degradando a blanco */
+            background: radial-gradient(circle at 20% 10%, #DCEEFF 0%, #E6F6FF 25%, #FFFFFF 60%);
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        /* Tarjeta de login con contraste suave sobre el degradado */
+        .login-card {
+            box-shadow: 0 20px 40px rgba(2,6,23,0.12), inset 0 1px 0 rgba(255,255,255,0.6);
+            border: 1px solid rgba(16,24,40,0.04);
+            backdrop-filter: blur(6px);
+        }
+        /* Inputs: al hacer focus el fondo se vuelve azul y el texto blanco (contraste) */
+        .input-with-icon input:focus {
+            background-color: #2563EB; /* primary-blue */
+            color: #ffffff;
+            border-color: #1D4ED8; /* primary-blue-dark */
+            box-shadow: 0 0 0 4px rgba(37,99,235,0.08);
+        }
+        .input-with-icon input:focus::placeholder {
+            color: rgba(255,255,255,0.8);
+        }
+        /* Cambiar color del icono izquierdo y del botón derecho cuando el input está enfocado */
+        .input-with-icon:focus-within .left-icon,
+        .input-with-icon:focus-within .svg-button {
+            color: #ffffff;
+        }
+        /* Transiciones suaves para background, color y sombra */
+        .input-with-icon input,
+        .input-with-icon .left-icon,
+        .input-with-icon .svg-button,
+        .input-group label {
+            transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+        }
+        /* Cambiar color del label cuando el grupo está enfocado */
+        .input-group:focus-within label {
+            color: #ffffff;
+        }
+        /* ADMIN: usar tonos rojos para el formulario de administrador */
+        #admin-login .input-with-icon input:focus {
+            background-color: #EF4444; /* primary-red */
+            color: #ffffff;
+            border-color: #DC2626; /* rojo más oscuro */
+            box-shadow: 0 0 0 4px rgba(239,68,68,0.08);
+        }
+        #admin-login .input-with-icon input:focus::placeholder {
+            color: rgba(255,255,255,0.8);
+        }
+        #admin-login .input-with-icon:focus-within .left-icon,
+        #admin-login .input-with-icon:focus-within .svg-button,
+        #admin-login .input-group:focus-within label {
+            color: #ffffff;
+        }
+        .switch-button {
+            transition: all 0.3s;
+            border-radius: 9999px; /* rounded-full */
+            padding: 0.5rem 1.5rem;
+            font-weight: 600;
+            color: #4B5563; /* gray-600 */
+            background-color: transparent;
+            border: 2px solid transparent;
+        }
+        .switch-button.active {
+            color: #2563EB; /* primary-blue */
+            background-color: #DBEAFE; /* blue-100 */
+            border-color: #2563EB;
+        }
+        .login-form.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Contenedor Principal de Login (Centrado y con estilo moderno) -->
+    <div class="w-full max-w-sm bg-white shadow-2xl rounded-xl p-8 border-t-8 border-blue-600">
+        
+        <h1 class="text-3xl font-extrabold text-gray-800 mb-6 text-center">BLESS BARBERSHOP</h1>
+
+        <!-- Contenedor de Switch (Barberos / Administrador) -->
+        <div class="flex justify-center p-1 bg-gray-100 rounded-full mb-8">
+            <button id="user-switch" class="switch-button active" onclick="showForm('employee')">Barberos</button>
+            <button id="admin-switch" class="switch-button" onclick="showForm('admin')">Administrador</button>
+        </div>
+
+        <!-- Formulario de Acceso Barberos (Empleados) -->
+        <form id="employee-login" class="login-form space-y-5 active">
+            <h2 class="text-xl font-bold text-gray-700 text-center">Acceso Barberos</h2>
+            <div class="input-group">
+                <label for="employee_username" class="block text-sm font-medium text-gray-700">Usuario:</label>
+                <div class="mt-1 relative input-with-icon">
+                    <!-- Icono usuario (SVG inline) - clickable para enfocar -->
+                    <svg role="button" tabindex="0" class="left-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 svg-button" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" onclick="document.getElementById('employee_username').focus()" onkeydown="if(event.key==='Enter'||event.key===' ') document.getElementById('employee_username').focus();">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A9 9 0 1118.88 6.196 9 9 0 015.12 17.804z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <input type="text" id="employee_username" name="username" required
+                           class="mt-0 block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-600 focus:border-blue-600 transition duration-200" />
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="employee_password" class="block text-sm font-medium text-gray-700">Contraseña:</label>
+                <div class="mt-1 relative input-with-icon">
+                    <!-- Icono candado (SVG inline) - clickable para enfocar -->
+                    <svg role="button" tabindex="0" class="left-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 svg-button" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" onclick="document.getElementById('employee_password').focus()" onkeydown="if(event.key==='Enter'||event.key===' ') document.getElementById('employee_password').focus();">
+                        <rect x="3" y="11" width="18" height="10" rx="2" ry="2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></rect>
+                        <path d="M7 11V7a5 5 0 0110 0v4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                    <input type="password" id="employee_password" name="password" required
+                           class="mt-0 block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-600 focus:border-blue-600 transition duration-200" />
+                    <!-- Toggle mostrar/ocultar contraseña (derecha) -->
+                    <button type="button" id="employee_toggle_pwd" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 svg-button" aria-label="Mostrar contraseña">
+                        <!-- ojo (eye) -->
+                        <svg id="employee_eye_open" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        <!-- ojo tachado (oculto) - hidden by default -->
+                        <svg id="employee_eye_closed" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.96 9.96 0 012.392-4.042"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <button type="submit" class="submit-button w-full py-3 rounded-lg text-white font-semibold bg-blue-600 hover:bg-blue-700 transition duration-300 shadow-lg">
+                Iniciar Sesión
+            </button>
+        </form>
+
+        <!-- Formulario de Acceso Administrador -->
+        <form id="admin-login" class="login-form space-y-5 hidden">
+            <h2 class="text-xl font-bold text-gray-700 text-center">Acceso Administrador</h2>
+            <div class="input-group">
+                <label for="admin_username" class="block text-sm font-medium text-gray-700">Usuario (Admin):</label>
+                <div class="mt-1 relative input-with-icon">
+                    <svg role="button" tabindex="0" class="left-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 svg-button" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" onclick="document.getElementById('admin_username').focus()" onkeydown="if(event.key==='Enter'||event.key===' ') document.getElementById('admin_username').focus();">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A9 9 0 1118.88 6.196 9 9 0 015.12 17.804z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <input type="text" id="admin_username" name="username" required
+                           class="mt-0 block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-blue focus:border-primary-blue transition duration-200" />
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="admin_password" class="block text-sm font-medium text-gray-700">Contraseña (Admin):</label>
+                <div class="mt-1 relative input-with-icon">
+                    <svg role="button" tabindex="0" class="left-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 svg-button" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" onclick="document.getElementById('admin_password').focus()" onkeydown="if(event.key==='Enter'||event.key===' ') document.getElementById('admin_password').focus();">
+                        <rect x="3" y="11" width="18" height="10" rx="2" ry="2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></rect>
+                        <path d="M7 11V7a5 5 0 0110 0v4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                    <input type="password" id="admin_password" name="password" required
+                           class="mt-0 block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-primary-blue focus:border-primary-blue transition duration-200" />
+                    <!-- Toggle mostrar/ocultar contraseña (derecha) -->
+                    <button type="button" id="admin_toggle_pwd" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 svg-button" aria-label="Mostrar contraseña">
+                        <svg id="admin_eye_open" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        <svg id="admin_eye_closed" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.96 9.96 0 012.392-4.042"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <button type="submit" class="submit-button w-full py-3 rounded-lg text-white font-semibold bg-primary-red hover:bg-red-600 transition duration-300 shadow-lg">
+                Acceder (Admin)
+            </button>
+        </form>
+
+        <!-- Mensaje de Carga/Error (Modal) -->
+        <!-- (movido fuera del contenedor principal para que el overlay cubra toda la pantalla) -->
+
+    </div>
+    
+    <!-- Mensaje de Carga/Error (Modal) -->
+    <div id="statusModal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 transition-opacity duration-300">
+        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-xs text-center">
+            <div id="loadingIndicator" class="hidden">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p class="text-blue-600 font-semibold">Cargando...</p>
+            </div>
+            <div id="messageContent" class="hidden">
+                <h3 id="modalTitle" class="text-lg font-bold mb-3 text-gray-800"></h3>
+                <p id="modalMessage" class="text-gray-600 mb-4"></p>
+                <button id="modalCloseButton" onclick="hideStatusModal()" class="w-full py-2 rounded-lg text-white font-semibold bg-blue-600 hover:bg-blue-700 transition duration-200">
+                    Aceptar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE FIREBASE Y LÓGICA DE AUTENTICACIÓN -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, signInWithEmailAndPassword, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, setDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+
+        // Establecer el nivel de log para depuración
+        setLogLevel('Debug');
+
+        // --- Configuración de Variables Globales (MANDATORIAS) ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+       const firebaseConfig = {
+  apiKey: "AIzaSyDZcbXf9j8-m1rZrp9IocnwAH2iMSd1ROs",
+    authDomain: "barberia-bless.firebaseapp.com",
+    projectId: "barberia-bless",
+    storageBucket: "barberia-bless.firebasestorage.app",
+    messagingSenderId: "141615150603",
+    appId: "1:141615150603:web:b81230202000f198b4b90e",
+    measurementId: "G-9E11Y5D6H6"};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // --- Inicialización de Firebase ---
+        let app;
+        let db;
+        let auth;
+        let initializationFailed = false; // Nueva bandera para controlar fallos
+
+        try {
+            // ** DIAGNÓSTICO: Imprimir la configuración para verificar si está vacía **
+            console.log("Configuración de Firebase intentando usar:", firebaseConfig); 
+            
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            
+            // Forzar la persistencia a nivel de sesión del navegador
+            setPersistence(auth, browserSessionPersistence);
+        } catch (error) {
+            console.error("Error al inicializar Firebase. Asegúrate de que __firebase_config es válido y no está vacío.", error);
+            initializationFailed = true; // Establecer la bandera en caso de fallo crítico
+        }
+
+        // --- Funciones del Modal de Estado ---
+        const statusModal = document.getElementById('statusModal');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const messageContent = document.getElementById('messageContent');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+
+        function showStatusModal(isSuccess, title, message) {
+            loadingIndicator.classList.add('hidden');
+            messageContent.classList.remove('hidden');
+            modalTitle.textContent = title;
+            // Aseguramos que los saltos de línea (\n\n) se muestren correctamente
+            modalMessage.innerHTML = message.replace(/\n\n/g, '<br><br>'); 
+            statusModal.classList.remove('hidden');
+        }
+
+        function showLoading() {
+            loadingIndicator.classList.remove('hidden');
+            messageContent.classList.add('hidden');
+            statusModal.classList.remove('hidden');
+        }
+
+        // Hacemos esta función global para que el onclick del HTML pueda llamarla
+        window.hideStatusModal = function() {
+            statusModal.classList.add('hidden');
+        }
+
+        /**
+         * Función principal de inicio de sesión.
+         * Busca el usuario por nombre de usuario y luego intenta autenticar con email/password.
+         * @param {string} username - Nombre de usuario ingresado.
+         * @param {string} password - Contraseña ingresada.
+         * @param {string} role - Rol esperado ('admin' o 'employee').
+         */
+        async function loginUser(username, password, role) {
+            // ** VERIFICACIÓN DE INICIALIZACIÓN: Permite SIMULACIÓN si la inicialización falló **
+            if (initializationFailed || !auth) {
+                 // --- SIMULACIÓN DE LOGIN PARA TESTEO DE UI ---
+                 console.warn("Fallo en la inicialización de Firebase. Realizando simulación de login para testear la UI.");
+                 showLoading();
+
+                 const simulatedUsers = {
+                     'admin': { password: 'adminpassword', role: 'admin' },
+                     'barbero1': { password: 'barberopassword', role: 'employee' }
+                 };
+
+                 const user = simulatedUsers[username];
+                 
+                 if (user && user.password === password && user.role === role) {
+                     showStatusModal(true, "Éxito", `Bienvenido ${username}! Redirigiendo a la interfaz de ${role}...`);
+                     await new Promise(r => setTimeout(r, 1000)); // Pequeño delay para ver el mensaje
+                     if (role === 'admin') {
+                         window.location.href = 'index_admin.html'; 
+                     } else {
+                         window.location.href = 'index_employee.html';
+                     }
+                 } else {
+                     showStatusModal(false, "Error de Acceso", "Credenciales incorrectas para el rol seleccionado.");
+                 }
+
+                 document.getElementById('employee_password').value = '';
+                 document.getElementById('admin_password').value = '';
+                 return;
+                 // --- FIN SIMULACIÓN ---
+            }
+            
+            showLoading();
+
+            try {
+                // PRIMER PASO CRUCIAL: Asegurar que el usuario de autenticación esté activo
+                if (!auth.currentUser) {
+                    // Si no hay usuario activo, iniciamos sesión anónimamente. 
+                    // Esto establece un UID temporal para poder buscar en Firestore.
+                    await signInAnonymously(auth);
+                }
+
+                const userId = auth.currentUser.uid;
+                
+                // 1. Crear la referencia a la colección de usuarios privados
+                // La colección de usuarios se encuentra bajo el UID del usuario que realizó el setup inicial (anónimo o token)
+                const userQueryRef = collection(db, `/artifacts/${appId}/users/${userId}/usuarios`);
+                
+                // 2. Buscar al usuario por nombre de usuario
+                const q = query(userQueryRef, where("username", "==", username));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    showStatusModal(false, "Error de Acceso", "Usuario no encontrado.");
+                    return;
+                }
+
+                // 3. Obtener el primer documento coincidente
+                const userDoc = querySnapshot.docs[0];
+                const userData = userDoc.data();
+                
+                // 4. Verificar que el rol coincida con el formulario
+                if (userData.role !== role) {
+                    showStatusModal(false, "Acceso Denegado", `El usuario "${username}" existe, pero no tiene el rol de ${role === 'admin' ? 'Administrador' : 'Barbero'}.`);
+                    return;
+                }
+
+                // 5. Comparar la contraseña (almacenada en texto plano en Firestore para este ejemplo)
+                if (userData.password !== password) {
+                    showStatusModal(false, "Error de Acceso", "Contraseña incorrecta.");
+                    return;
+                }
+
+                // 6. Si el usuario, rol y contraseña coinciden, autenticamos con el email ficticio
+                // Esto es solo para que el sistema de autenticación de Firebase se "active"
+                const userEmail = `${username}@blessbarbershop.com`;
+                await signInWithEmailAndPassword(auth, userEmail, password); // NOTA: Aquí Firebase Auth valida contra sus propias reglas, pero la validación real la hicimos en el paso 5.
+                
+                // 7. Redirigir según el rol
+                if (role === 'admin') {
+                    // Se asume que el usuario quiere que esta sea su página de destino
+                    window.location.href = 'index_admin.html'; 
+                } else {
+                    // Se asume que el usuario quiere que esta sea su página de destino
+                    window.location.href = 'index_employee.html';
+                }
+
+            } catch (error) {
+                console.error("Error durante el login:", error);
+                
+                let errorMessage = "Ocurrió un error inesperado. Revisa la consola para más detalles.";
+                
+                // Errores de Firebase Auth (aunque el paso 5 valida la contraseña, este es un fallback)
+                if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    errorMessage = "Credenciales inválidas. Por favor, revise el usuario y la contraseña.";
+                } else if (error.message.includes('permission-denied')) {
+                    errorMessage = "Error de permisos. Asegúrate de que los datos iniciales se crearon correctamente.";
+                }
+                
+                showStatusModal(false, "Error de Autenticación", errorMessage);
+
+            } finally {
+                // Limpiamos los campos de contraseña en caso de error
+                document.getElementById('employee_password').value = '';
+                document.getElementById('admin_password').value = '';
+            }
+        }
+        
+        // --- Lógica del Switch y Event Listeners (SIN CAMBIOS) ---
+        window.showForm = function(formType) {
+            const employeeForm = document.getElementById('employee-login');
+            const adminForm = document.getElementById('admin-login');
+            const userSwitch = document.getElementById('user-switch');
+            const adminSwitch = document.getElementById('admin-switch');
+
+            if (formType === 'admin') {
+                employeeForm.classList.add('hidden');
+                adminForm.classList.remove('hidden');
+                userSwitch.classList.remove('active');
+                adminSwitch.classList.add('active');
+            } else {
+                employeeForm.classList.remove('hidden');
+                adminForm.classList.add('hidden');
+                userSwitch.classList.add('active');
+                adminSwitch.classList.remove('active');
+            }
+        }
+
+        // Manejadores de envío de formularios (SIN CAMBIOS)
+        document.getElementById('employee-login').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('employee_username').value;
+            const password = document.getElementById('employee_password').value;
+            loginUser(username, password, 'employee');
+        });
+
+        document.getElementById('admin-login').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('admin_username').value;
+            const password = document.getElementById('admin_password').value;
+            loginUser(username, password, 'admin');
+        });
+
+        // --- Inicialización y Creación de Usuarios por Defecto (SOLO EN EL PRIMER ARRANQUE) ---
+        
+        async function setupInitialData() {
+            // **IMPORTANTE: Garantizar que haya un usuario de autenticación activo para buscar datos**
+            if (!auth.currentUser) {
+                if (initialAuthToken) {
+                     await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            }
+
+            const userId = auth.currentUser.uid;
+            const usersRef = doc(db, `/artifacts/${appId}/users/${userId}/usuarios`, "setup_check");
+            
+            const docSnap = await getDoc(usersRef);
+
+            if (!docSnap.exists()) {
+                console.log("Creando usuarios por defecto y marcador de setup...");
+                const userColRef = collection(db, `/artifacts/${appId}/users/${userId}/usuarios`);
+
+                // 1. Usuario Administrador 
+                await setDoc(doc(userColRef, "admin"), {
+                    username: 'admin',
+                    password: 'adminpassword', 
+                    role: 'admin',
+                    createdAt: new Date()
+                });
+
+                // 2. Usuario Empleado 
+                await setDoc(doc(userColRef, "barbero1"), {
+                    username: 'barbero1',
+                    password: 'barberopassword', 
+                    role: 'employee',
+                    createdAt: new Date()
+                });
+                
+                await setDoc(usersRef, { done: true, setupDate: new Date() });
+                console.log("Setup inicial completado. Usuarios creados.");
+            } else {
+                console.log("Usuarios por defecto ya existen. UID de base de datos:", userId);
+            }
+        }
+
+        // --- INICIO DE LA APLICACIÓN ---
+        if (!initializationFailed && auth) {
+            // Llamar a la función de inicialización y setup
+            setupInitialData().then(() => {
+                console.log("El intento de manipular usuarios será notificado.");
+            }).catch(err => {
+                console.error("Fallo al crear o autenticar datos iniciales:", err); // Mensaje de consola más específico
+                showStatusModal(false, "Error de Configuración", "Fallo al crear usuarios iniciales o conectar con la base de datos. Revisa la consola para detalles de permisos."); // Mensaje de modal ajustado
+            });
+        } else {
+             // Si la inicialización de Firebase falló desde el principio
+             console.error("Firebase Auth no se pudo inicializar. Deteniendo la aplicación.");
+             
+             let criticalMessage = "El sistema de autenticación no se pudo inicializar. Revisa la configuración de red y la consola.";
+             let criticalTitle = "Error Crítico";
+
+             // Chequeo para el error específico de configuración faltante
+             if (Object.keys(firebaseConfig).length === 0 || !firebaseConfig.projectId) {
+                 criticalTitle = "ATENCIÓN!";
+                 criticalMessage = `El sistema de base de datos está conectado. Usa las credenciales para continuar`;
+             }
+
+             showStatusModal(false, criticalTitle, criticalMessage);
+        }
+
+    </script>
+</body>
+</html>

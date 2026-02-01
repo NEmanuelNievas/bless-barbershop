@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingreso de Gastos</title>
+    <!-- Carga de Tailwind CSS para un diseño moderno y responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles_shared.css">
+    <!-- SheetJS library para exportar a Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    
+    <!-- Configuración personalizada de Tailwind para el color azul y la fuente Inter -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-blue': '#2563EB', // Un azul vibrante
+                        'primary-blue-dark': '#1D4ED8',
+                        'success-green': '#10B981', // Verde para éxito
+                        'error-red': '#EF4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Estilo base para el cuerpo y el fondo (delegado al shared stylesheet) */
+        body { font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+        /* Estilo para el contenedor principal centrado */
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; /* Centra el formulario verticalmente */
+            padding: 1.5rem;
+        }
+
+        /* Estilo para los inputs de texto y select */
+        .form-input, .form-select {
+            @apply w-full p-3 border border-gray-300 rounded-lg text-base 
+                   focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition duration-150;
+        }
+        
+        /* Nuevo estilo para el monto, ahora alineado a la izquierda */
+        #expenseAmount {
+            text-align: left;
+        }
+
+        /* --- Estilos para custom select con iconos --- */
+        .custom-select {
+            position: relative;
+            width: 100%;
+            max-width: 100%;
+        }
+        .custom-select .select-trigger {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db; /* gray-300 */
+            border-radius: 0.5rem;
+            background: white;
+            cursor: pointer;
+        }
+        .custom-select .select-trigger:focus {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(37,99,235,0.08);
+        }
+        .custom-select .select-options {
+            position: absolute;
+            z-index: 40;
+            top: calc(100% + 0.5rem);
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e5e7eb; /* gray-200 */
+            border-radius: 0.5rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            max-height: 14rem;
+            overflow: auto;
+        }
+        .custom-select .select-options li {
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+        }
+        .custom-select .select-options li:hover,
+        .custom-select .select-options li[aria-selected="true"] {
+            background: #eff6ff; /* primary-blue-light */
+        }
+        .custom-select .opt-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #374151; /* gray-700 */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Mensaje Modal de Éxito (Reutilizamos la idea para la confirmación) -->
+    <div id="successModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-xs p-6 text-center">
+            <svg class="mx-auto h-12 w-12 text-success-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            <h3 class="mt-4 text-lg font-medium text-gray-900">Gasto Registrado</h3>
+            <p id="successMessage" class="mt-2 text-sm text-gray-500"></p>
+            <button id="closeSuccessModal" class="mt-5 w-full py-2 bg-success-green hover:bg-green-600 text-white font-semibold rounded-lg transition">
+                Aceptar
+            </button>
+        </div>
+    </div>
+
+
+    <!-- PÁGINA PRINCIPAL -->
+    <div class="app-container">
+
+        <!-- Título de la Barbershop -->
+        <h1 class="neon-title text-4xl font-extrabold mb-8 tracking-wide">
+            BLESS BARBERSHOP
+        </h1>
+
+        <!-- Contenedor del Formulario -->
+        <div class="w-full max-w-lg bg-white shadow-2xl rounded-xl p-6 md:p-10 space-y-6">
+            
+            <!-- Título de la Página -->
+            <header class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Ingreso de Gastos</h2>
+                <p class="text-gray-500 text-sm">Registra una nueva salida de dinero.</p>
+            </header>
+
+            <form id="expenseForm" class="space-y-6">
+
+                <!-- 1. MONTO DEL GASTO -->
+                <div class="space-y-2">
+                    <label for="expenseAmount" class="block text-lg font-semibold text-blue-600">
+                        <!-- Icono SVG a la izquierda del texto -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline-block mr-2" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 1v22" />
+                            <path d="M17 5H9a3 3 0 1 0 0 6h6a3 3 0 1 1 0 6H7" />
+                        </svg>
+                        Monto del Gasto
+                    </label>
+                    <!-- Input con icono interno -->
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 1v22" />
+                                <path d="M17 5H9a3 3 0 1 0 0 6h6a3 3 0 1 1 0 6H7" />
+                            </svg>
+                        </span>
+                        <!-- Se aplica la clase form-input para el estilo de cuadro -->
+                        <input type="number" id="expenseAmount" placeholder="Ej: 5000" required min="0.01" step="any"
+                               class="form-input pl-12">
+                    </div>
+                </div>
+
+                <!-- 2. CATEGORÍA DEL GASTO -->
+                <div class="space-y-2">
+                    <label for="expenseCategory" class="block text-lg font-semibold text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline-block mr-2" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 7h18" />
+                            <path d="M3 12h18" />
+                            <path d="M3 17h18" />
+                        </svg>
+                        Categoría
+                    </label>
+                    <!-- Native select kept for form compatibility but hidden; value synced with custom UI -->
+                    <select id="expenseCategory" class="form-select" required style="display:none;">
+                        <option value="" disabled selected>Seleccione una categoría</option>
+                        <option value="Materiales">Materiales</option>
+                        <option value="Arreglo de herramientas">Arreglo de herramientas</option>
+                        <option value="Pago de impuestos">Pago de impuestos</option>
+                        <option value="Pago de servicio a terceros">Pago de servicio a terceros</option>
+                        <option value="Varios">Varios</option>
+                        <option value="Sueldos">Pago Empleados</option>
+                    </select>
+
+                    <!-- Custom select with icons -->
+                    <div class="custom-select" id="customCategorySelect" tabindex="0" aria-haspopup="listbox" aria-expanded="false">
+                        <button type="button" class="select-trigger" id="customCategoryTrigger" aria-labelledby="customCategoryLabel">
+                            <span class="opt-icon" id="customCategoryIcon" aria-hidden="true">📂</span>
+                            <span id="customCategoryLabel" class="text-gray-700">Seleccione una categoría</span>
+                            <svg class="ml-auto" width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M6 8L10 12L14 8" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+
+                        <ul class="select-options hidden" role="listbox" id="customCategoryList">
+                            <li role="option" data-value="Materiales" data-icon="📦" tabindex="0">
+                                <span class="opt-icon">📦</span>
+                                <span class="opt-label">Materiales</span>
+                            </li>
+                            <li role="option" data-value="Arreglo de herramientas" data-icon="🔧" tabindex="0">
+                                <span class="opt-icon">🔧</span>
+                                <span class="opt-label">Arreglo de herramientas</span>
+                            </li>
+                            <li role="option" data-value="Pago de impuestos" data-icon="🧾" tabindex="0">
+                                <span class="opt-icon">🧾</span>
+                                <span class="opt-label">Pago de impuestos</span>
+                            </li>
+                            <li role="option" data-value="Pago de servicio a terceros" data-icon="🤝" tabindex="0">
+                                <span class="opt-icon">🤝</span>
+                                <span class="opt-label">Pago de servicio a terceros</span>
+                            </li>
+                            <li role="option" data-value="Varios" data-icon="🔖" tabindex="0">
+                                <span class="opt-icon">🔖</span>
+                                <span class="opt-label">Varios</span>
+                            </li>
+                            <li role="option" data-value="Sueldos" data-icon="💼" tabindex="0">
+                                <span class="opt-icon">💼</span>
+                                <span class="opt-label">Pago Empleados</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 3. DETALLE DE GASTO (CONDICIONAL PARA VARIAS CATEGORÍAS) -->
+                <!-- El texto se ajusta para ser más general -->
+                <div id="otherExpenseContainer" class="space-y-2 hidden">
+                    <label for="otherExpenseDetails" class="block text-sm font-medium text-gray-700">Especificar Gasto (Obligatorio)</label>
+                    <input type="text" id="otherExpenseDetails" placeholder="Ingrese detalles del gasto (ej: pago de la luz, compra de navajas)"
+                           class="form-input" maxlength="100">
+                </div>
+
+                <!-- 4. ADJUNTAR COMPROBANTE (IMAGEN) -->
+                <div class="space-y-2">
+                    <label for="receiptInput" class="block text-lg font-semibold text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline-block mr-2" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <path d="M7 10l5-5 5 5" />
+                            <path d="M12 5v12" />
+                        </svg>
+                        Adjuntar comprobante (opcional)
+                    </label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <path d="M7 10l5-5 5 5" />
+                                <path d="M12 5v12" />
+                            </svg>
+                        </span>
+                        <input type="file" id="receiptInput" accept="image/*" class="form-input pl-12" />
+                    </div>
+
+                    <div id="receiptPreviewContainer" class="hidden mt-2">
+                        <img id="receiptPreview" src="" alt="Previsualización del comprobante" class="max-w-xs rounded-lg shadow-sm" />
+                        <div class="mt-2">
+                            <button type="button" id="removeReceiptBtn" class="text-sm text-red-500 hover:underline">Eliminar comprobante</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTÓN DE ENVIAR -->
+                <button type="submit" id="submitExpense"
+                        class="w-full py-3 mt-4 bg-blue-600 hover:bg-blue-700 text-white 
+                               font-bold rounded-lg shadow-lg 
+                               transition duration-300 ease-in-out transform hover:scale-[1.01]
+                               focus:outline-none focus:ring-4 focus:ring-blue-600/50">
+                    Enviar Gasto
+                </button>
+            </form>
+
+            <!-- Mensaje de Resultado para ERRORES (Se usa para validaciones) -->
+            <div id="resultMessage" class="hidden mt-6 p-3 bg-red-100 border border-error-red text-center rounded-lg text-error-red font-medium" role="alert">
+                <!-- Se pobla con mensajes de error si la validación falla -->
+            </div>
+
+        </div>
+
+        <!-- Vínculo para volver (simulación de navegación) -->
+        <a href="index_admin.html" class="mt-6 text-sm text-blue-600 hover:text-blue-700 transition duration-150 ease-in-out font-medium">
+            Volver a la Página Principal
+        </a>
+
+    </div>
+
+    <script type="module">
+        // --- FIREBASE IMPORTS ---
+        import { expensesAPI } from './firebase-config.js';
+
+        // Lógica de JavaScript para la gestión de gastos
+
+    const expenseForm = document.getElementById('expenseForm');
+    const expenseAmountInput = document.getElementById('expenseAmount');
+    const expenseCategorySelect = document.getElementById('expenseCategory');
+    const otherExpenseContainer = document.getElementById('otherExpenseContainer');
+    const otherExpenseDetailsInput = document.getElementById('otherExpenseDetails');
+    const resultMessage = document.getElementById('resultMessage');
+
+        // Elementos para adjuntar comprobante (imagen)
+        const receiptInput = document.getElementById('receiptInput');
+        const receiptPreviewContainer = document.getElementById('receiptPreviewContainer');
+        const receiptPreview = document.getElementById('receiptPreview');
+        const removeReceiptBtn = document.getElementById('removeReceiptBtn');
+        let receiptFile = null; // contendrá el archivo File si se adjunta
+
+        // --- FUNCIONES DE PERSISTENCIA EN FIRESTORE ---
+        
+        /**
+         * Carga los gastos desde Firestore
+         * @returns {Promise<Array>} Array de objetos de gastos
+         */
+        async function loadExpenses() {
+            try {
+                return await expensesAPI.getAll();
+            } catch (error) {
+                console.error('Error al cargar gastos:', error);
+                return [];
+            }
+        }
+
+        /**
+         * Agrega un nuevo gasto en Firestore con comprobante opcional
+         * @param {Object} expense - Objeto con datos del gasto
+         * @param {File} file - Archivo de comprobante (opcional)
+         * @returns {Promise<string>} ID del documento creado
+         */
+        async function addExpense(expense, file = null) {
+            try {
+                return await expensesAPI.create(expense, file);
+            } catch (error) {
+                console.error('Error al agregar gasto:', error);
+                throw error;
+            }
+        }
+
+        // --- Custom category select with icons ---
+        const nativeCategorySelect = document.getElementById('expenseCategory');
+        const customCategory = document.getElementById('customCategorySelect');
+        const customTrigger = document.getElementById('customCategoryTrigger');
+        const customList = document.getElementById('customCategoryList');
+        const customLabel = document.getElementById('customCategoryLabel');
+        const customIcon = document.getElementById('customCategoryIcon');
+
+        function openCustomList() {
+            customList.classList.remove('hidden');
+            customCategory.setAttribute('aria-expanded', 'true');
+        }
+        function closeCustomList() {
+            customList.classList.add('hidden');
+            customCategory.setAttribute('aria-expanded', 'false');
+        }
+
+        // Toggle dropdown
+        customTrigger.addEventListener('click', (e) => {
+            const expanded = customCategory.getAttribute('aria-expanded') === 'true';
+            if (expanded) closeCustomList(); else openCustomList();
+        });
+
+        // Close on outside click
+        document.addEventListener('click', (e) => {
+            if (!customCategory.contains(e.target)) closeCustomList();
+        });
+
+        // Keyboard support
+        customCategory.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                const expanded = customCategory.getAttribute('aria-expanded') === 'true';
+                if (expanded) closeCustomList(); else openCustomList();
+            } else if (e.key === 'Escape') {
+                closeCustomList();
+            }
+        });
+
+        // Handle option clicks/selection
+        customList.querySelectorAll('li').forEach(li => {
+            li.addEventListener('click', () => selectCategoryOption(li));
+            li.addEventListener('keydown', (ev) => {
+                if (ev.key === 'Enter' || ev.key === ' ') {
+                    ev.preventDefault();
+                    selectCategoryOption(li);
+                }
+            });
+        });
+
+        function selectCategoryOption(li) {
+            const value = li.getAttribute('data-value');
+            const icon = li.getAttribute('data-icon') || '';
+            const label = li.querySelector('.opt-label')?.textContent || value;
+
+            // Update visible label and icon
+            customLabel.textContent = label;
+            customIcon.textContent = icon;
+
+            // Update native select value and trigger change event
+            if (nativeCategorySelect) {
+                nativeCategorySelect.value = value;
+                nativeCategorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            // Mark selected for styles
+            customList.querySelectorAll('li').forEach(n => n.setAttribute('aria-selected', 'false'));
+            li.setAttribute('aria-selected', 'true');
+
+            closeCustomList();
+        }
+        
+        const successModal = document.getElementById('successModal');
+        const successMessage = document.getElementById('successMessage');
+        const closeSuccessModal = document.getElementById('closeSuccessModal');
+
+        // Categorías que requieren detalle obligatorio
+        const categoriesRequiringDetail = ['Varios', 'Pago de impuestos', 'Pago de servicio a terceros'];
+
+
+        // --- FUNCIÓN CONDICIONAL DE VARIACIÓN ---
+        expenseCategorySelect.addEventListener('change', () => {
+            const selectedCategory = expenseCategorySelect.value;
+            const requiresDetail = categoriesRequiringDetail.includes(selectedCategory);
+
+            if (requiresDetail) {
+                // Mostrar el campo de detalle y hacerlo obligatorio
+                otherExpenseContainer.classList.remove('hidden');
+                otherExpenseDetailsInput.setAttribute('required', 'required');
+            } else {
+                // Ocultar el campo de detalle y quitar la obligatoriedad
+                otherExpenseContainer.classList.add('hidden');
+                otherExpenseDetailsInput.removeAttribute('required');
+                otherExpenseDetailsInput.value = ''; // Limpiar el campo
+            }
+        });
+
+        // --- FUNCIÓN DE ENVÍO DE FORMULARIO ---
+        expenseForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Evitar el envío de formulario tradicional
+            
+            const amount = parseFloat(expenseAmountInput.value);
+            const category = expenseCategorySelect.value;
+            const details = otherExpenseDetailsInput.value.trim();
+            const requiresDetail = categoriesRequiringDetail.includes(category);
+
+            // 1. Validaciones
+            if (isNaN(amount) || amount <= 0) {
+                showMessage('Por favor, ingrese un monto válido y positivo.', 'error');
+                expenseAmountInput.focus();
+                return;
+            }
+
+            if (!category) {
+                showMessage('Por favor, seleccione una categoría de gasto.', 'error');
+                return;
+            }
+
+            if (requiresDetail && details === '') {
+                showMessage('Debe especificar el gasto para la categoría seleccionada.', 'error');
+                otherExpenseDetailsInput.focus();
+                return;
+            }
+            
+            // Ocultar mensaje de error si las validaciones pasan
+            resultMessage.classList.add('hidden');
+
+            // 2. Crear objeto de gasto
+            const expenseData = {
+                amount: amount.toFixed(2),
+                category: category,
+                detail: requiresDetail ? details : 'N/A', // Usar 'N/A' si no se requiere detalle
+                fecha: new Date().toISOString() // Fecha completa en formato ISO
+            };
+
+            // 3. Guardar en Firestore (con comprobante si existe)
+            try {
+                // Deshabilitar el botón durante el proceso
+                const submitBtn = expenseForm.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Guardando...';
+
+                await addExpense(expenseData, receiptFile);
+                
+                console.log("--- Gasto Registrado y Guardado en Firestore ---");
+                console.log(expenseData);
+                console.log("------------------------");
+
+                // 4. Mostrar Modal de Éxito
+                showSuccessModal({
+                    monto: expenseData.amount,
+                    categoria: expenseData.category,
+                    detalle: expenseData.detail,
+                    comprobante: receiptFile !== null
+                });
+
+                // 5. Limpiar formulario
+                expenseForm.reset();
+                otherExpenseContainer.classList.add('hidden');
+                otherExpenseDetailsInput.removeAttribute('required');
+                // Limpiar comprobante adjunto si lo hubiese
+                receiptFile = null;
+                receiptPreview.src = '';
+                receiptPreviewContainer.classList.add('hidden');
+                receiptInput.value = '';
+
+                // Rehabilitar botón
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Guardar Gasto';
+
+            } catch (error) {
+                console.error('Error al guardar gasto:', error);
+                showMessage('Error al guardar el gasto. Por favor intente nuevamente.', 'error');
+                
+                // Rehabilitar botón en caso de error
+                const submitBtn = expenseForm.querySelector('button[type="submit"]');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Guardar Gasto';
+            }
+        });
+
+        // --- EXPORTACIÓN A EXCEL ---
+        
+        /**
+         * Exporta automáticamente los gastos a un archivo Excel
+         */
+        async function exportToExcel() {
+            try {
+                const expenses = await loadExpenses();
+                
+                if (expenses.length === 0) {
+                    showMessage('No hay gastos para exportar.', 'error');
+                    return;
+                }
+
+                // Agrupar gastos por mes
+                const expensesByMonth = {};
+                
+                expenses.forEach(expense => {
+                    const date = new Date(expense.fecha);
+                    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+                    
+                    if (!expensesByMonth[monthKey]) {
+                        expensesByMonth[monthKey] = [];
+                    }
+                    
+                    expensesByMonth[monthKey].push({
+                        'Fecha': date.toLocaleDateString('es-AR'),
+                        'Categoría': expense.category,
+                        'Detalle': expense.detail,
+                        'Monto': `$${expense.amount}`,
+                        'Comprobante': expense.receiptURL ? 'Sí' : 'No'
+                    });
+                });
+
+                // Crear workbook
+                const wb = XLSX.utils.book_new();
+                
+                // Ordenar meses cronológicamente
+                const sortedMonths = Object.keys(expensesByMonth).sort();
+                
+                // Crear una hoja por mes
+                sortedMonths.forEach(monthKey => {
+                    const monthExpenses = expensesByMonth[monthKey];
+                    
+                    // Calcular total del mes
+                    const monthTotal = monthExpenses.reduce((sum, exp) => {
+                        const amount = parseFloat(exp.Monto.replace('$', ''));
+                        return sum + amount;
+                    }, 0);
+                    
+                    // Agregar fila de total
+                    monthExpenses.push({
+                        'Fecha': '',
+                        'Categoría': '',
+                        'Detalle': 'TOTAL',
+                        'Monto': `$${monthTotal.toFixed(2)}`,
+                        'Comprobante': ''
+                    });
+                    
+                    // Convertir a worksheet
+                    const ws = XLSX.utils.json_to_sheet(monthExpenses);
+                    
+                    // Ajustar anchos de columna
+                    ws['!cols'] = [
+                        { wch: 12 }, // Fecha
+                        { wch: 25 }, // Categoría
+                        { wch: 30 }, // Detalle
+                        { wch: 12 }, // Monto
+                        { wch: 12 }  // Comprobante
+                    ];
+                    
+                    // Nombre de la hoja (mes y año)
+                    const [year, month] = monthKey.split('-');
+                    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                    const sheetName = `${monthNames[parseInt(month) - 1]} ${year}`;
+                    
+                    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+                });
+
+                // Generar nombre de archivo con fecha actual
+                const now = new Date();
+                const fileName = `Gastos_${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}.xlsx`;
+                
+                // Descargar archivo
+                XLSX.writeFile(wb, fileName);
+                
+                console.log(`Excel exportado: ${fileName}`);
+                showMessage('Excel exportado exitosamente.', 'success');
+                
+            } catch (error) {
+                console.error('Error al exportar:', error);
+                showMessage('Error al exportar a Excel.', 'error');
+            }
+        }
+
+
+        // --- GESTIÓN DE MODALES Y MENSAJES ---
+
+        function showSuccessModal(data) {
+            successMessage.innerHTML = `
+                <div class="mb-2 text-green-600 font-semibold">✓ Gasto guardado exitosamente</div>
+                Monto: <span class="font-bold text-success-green">$${data.monto}</span><br>
+                Categoría: <span class="font-medium">${data.categoria}</span>`;
+            if (data.detalle !== 'N/A') {
+                 successMessage.innerHTML += `<br>Detalle: <span class="font-medium">${data.detalle}</span>`;
+            }
+
+            if (data.comprobante) {
+                successMessage.innerHTML += `<br><span class="text-sm text-gray-600">Comprobante adjuntado.</span>`;
+            }
+
+            successModal.classList.remove('hidden');
+        }
+
+        closeSuccessModal.addEventListener('click', () => {
+            successModal.classList.add('hidden');
+        });
+
+        // --- Manejadores para adjuntar comprobante (imagen) ---
+        if (receiptInput) {
+            receiptInput.addEventListener('change', function () {
+                const file = this.files && this.files[0];
+                if (!file) return;
+
+                // Validación de tamaño: máximo 5 MB
+                const maxSize = 5 * 1024 * 1024; // 5MB
+                if (file.size > maxSize) {
+                    showMessage('El archivo excede el tamaño máximo de 5 MB. Por favor seleccione otro archivo.');
+                    this.value = '';
+                    return;
+                }
+
+                // Guardar referencia al archivo para subirlo después
+                receiptFile = file;
+
+                // Previsualizar imagen localmente
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    receiptPreview.src = evt.target.result;
+                    receiptPreviewContainer.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            });
+
+            removeReceiptBtn.addEventListener('click', () => {
+                receiptFile = null;
+                receiptPreview.src = '';
+                receiptPreviewContainer.classList.add('hidden');
+                receiptInput.value = '';
+            });
+        }
+
+        /**
+         * Muestra un mensaje de alerta en la interfaz (dentro del formulario).
+         * @param {string} message - El texto del mensaje.
+         * @param {string} type - Tipo de mensaje: 'error' o 'success'
+         */
+        function showMessage(message, type = 'error') {
+            resultMessage.textContent = message;
+            
+            // Cambiar estilo según tipo
+            if (type === 'success') {
+                resultMessage.classList.remove('bg-red-100', 'border-error-red', 'text-error-red');
+                resultMessage.classList.add('bg-green-100', 'border-green-500', 'text-green-700');
+            } else {
+                resultMessage.classList.remove('bg-green-100', 'border-green-500', 'text-green-700');
+                resultMessage.classList.add('bg-red-100', 'border-error-red', 'text-error-red');
+            }
+            
+            resultMessage.classList.remove('hidden');
+
+            // Ocultar mensaje después de 5 segundos
+            setTimeout(() => {
+                resultMessage.classList.add('hidden');
+            }, 5000);
+        }
+
+    </script>
+</body>
+</html>

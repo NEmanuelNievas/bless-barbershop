@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Precios - Bless Barbershop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles_shared.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { 'primary-blue': '#2563EB', 'primary-blue-dark': '#1D4ED8' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; min-height: 100vh; }
+        .app-container { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:1.5rem; }
+        .item-row { display:flex; gap:0.75rem; align-items:center; }
+        .item-row input[type="number"] { width:140px; }
+        .small-muted { font-size:0.85rem; color:#6B7280; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <h1 class="neon-title text-4xl font-extrabold mb-8 tracking-wide">BLESS BARBERSHOP</h1>
+
+        <div class="w-full max-w-lg bg-white shadow-2xl rounded-xl p-6 md:p-10 space-y-6">
+            <header class="text-center mb-4">
+            <h2 class="text-3xl md:text-4xl font-bold text-blue-600 text-center">Editar Precios de Servicios</h2>
+                <p class="text-gray-500 text-sm text-center">Aquí puedes modificar los precios por servicio y agregar nuevos servicios.</p>
+            </header>
+
+            <!-- Lista editable de servicios -->
+            <div id="pricesContainer" class="space-y-3">
+                <!-- JS poblará las filas aquí -->
+            </div>
+
+            <div class="flex items-center justify-between pt-3 border-t border-gray-200">
+                <div class="flex gap-3 items-center">
+                    <button id="savePricesBtn" class="py-2 px-4 bg-blue-600 text-white rounded-lg font-semibold shadow hover:bg-blue-700">Guardar Precios</button>
+                    <button id="resetDefaultBtn" class="py-2 px-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Restaurar por defecto</button>
+                </div>
+                <div class="text-sm small-muted">🔥 Sincronización en tiempo real con Firebase</div>
+            </div>
+
+            <!-- Agregar nuevo servicio -->
+            <div class="pt-4 border-t border-gray-100">
+                <h3 class="text-2xl md:text-3xl font-semibold text-blue-600 mb-3 text-center">Agregar nuevo servicio</h3>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <input id="newServiceName" type="text" placeholder="Nombre del servicio" class="p-2 border border-gray-300 rounded-lg col-span-2">
+                    <input id="newServicePrice" type="number" placeholder="Precio" class="p-2 border border-gray-300 rounded-lg">
+                </div>
+                <div class="mt-3 flex gap-3">
+                    <button id="addServiceBtn" class="py-2 px-4 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600">Agregar Servicio</button>
+                    <button id="clearAllBtn" class="py-2 px-4 bg-red-100 text-red-700 rounded-lg hover:bg-red-200">Eliminar todos</button>
+                </div>
+            </div>
+
+            <div class="mt-4 text-center">
+                <a href="index_admin.html" class="inline-block text-sm text-blue-600 hover:text-blue-700">← Volver a la página principal</a>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { servicesAPI } from './firebase-config.js';
+
+        // Default prices (same initial mapping as cobranza)
+        const DEFAULT_PRICES = {
+            'Corte estándar': 2500,
+            'Corte con barba': 3500,
+            'Corte V.I.P.': 5000,
+            'Tintura': 4200,
+            'Indumentaria': 1500
+        };
+
+        const pricesContainer = document.getElementById('pricesContainer');
+        const savePricesBtn = document.getElementById('savePricesBtn');
+        const resetDefaultBtn = document.getElementById('resetDefaultBtn');
+        const addServiceBtn = document.getElementById('addServiceBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const newServiceName = document.getElementById('newServiceName');
+        const newServicePrice = document.getElementById('newServicePrice');
+
+        let currentServices = [];
+        let unsubscribe = null;
+
+        // Load prices from Firestore with real-time updates
+        async function loadPrices() {
+            try {
+                currentServices = await servicesAPI.getAll();
+                
+                // Si no hay servicios, inicializar con defaults
+                if (currentServices.length === 0) {
+                    console.log('No hay servicios. Inicializando defaults...');
+                    await servicesAPI.initDefaults();
+                    currentServices = await servicesAPI.getAll();
+                }
+                
+                renderPrices();
+            } catch (error) {
+                console.error('Error cargando precios:', error);
+                alert('Error al cargar precios. Verifica la consola.');
+            }
+        }
+
+        // Setup real-time listener
+        function setupRealtimeListener() {
+            unsubscribe = servicesAPI.onServicesChange((services) => {
+                console.log('🔄 Precios actualizados en tiempo real');
+                currentServices = services;
+                renderPrices();
+            });
+        }
+
+        function renderPrices() {
+            pricesContainer.innerHTML = '';
+            
+            if (currentServices.length === 0) {
+                pricesContainer.innerHTML = '<p class="text-gray-500 italic">No hay servicios definidos.</p>';
+                return;
+            }
+
+            currentServices.forEach(service => {
+                const row = document.createElement('div');
+                row.className = 'item-row p-3 border rounded-lg bg-white justify-between';
+                row.innerHTML = `
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-800">${escapeHtml(service.name)}</div>
+                        <div class="text-sm small-muted">Nombre del servicio</div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <input type="number" min="0" step="1" class="p-2 border border-gray-300 rounded-lg" 
+                               value="${Number(service.price).toFixed(2)}" 
+                               data-service-id="${escapeAttr(service.id)}"
+                               data-service-name="${escapeAttr(service.name)}">
+                        <button class="remove-btn py-1 px-3 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200">Eliminar</button>
+                    </div>
+                `;
+
+                // Remove handler
+                row.querySelector('.remove-btn').addEventListener('click', async () => {
+                    if (!confirm(`Eliminar el servicio "${service.name}"?`)) return;
+                    try {
+                        await servicesAPI.delete(service.name);
+                        // No need to call renderPrices - real-time listener handles it
+                    } catch (error) {
+                        console.error('Error eliminando servicio:', error);
+                        alert('Error al eliminar el servicio.');
+                    }
+                });
+
+                // Price input change saved on blur
+                const input = row.querySelector('input[type="number"]');
+                input.addEventListener('blur', async () => {
+                    const val = parseFloat(input.value) || 0;
+                    try {
+                        await servicesAPI.save(service.name, val);
+                        // No need to call renderPrices - real-time listener handles it
+                    } catch (error) {
+                        console.error('Error guardando precio:', error);
+                        alert('Error al guardar el precio.');
+                    }
+                });
+
+                pricesContainer.appendChild(row);
+            });
+        }
+
+        // helpers to avoid injection
+        function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]); }
+        function escapeAttr(s){ return String(s).replace(/"/g,'\"'); }
+
+        // Add service
+        addServiceBtn.addEventListener('click', async () => {
+            const name = newServiceName.value.trim();
+            const price = Number(newServicePrice.value);
+            
+            if (!name) { 
+                alert('Ingresa un nombre de servicio.'); 
+                newServiceName.focus(); 
+                return; 
+            }
+            
+            if (isNaN(price) || price < 0) { 
+                alert('Ingresa un precio válido.'); 
+                newServicePrice.focus(); 
+                return; 
+            }
+
+            const exists = currentServices.find(s => s.name === name);
+            if (exists) {
+                if (!confirm('El servicio ya existe. ¿Deseas sobrescribir su precio?')) return;
+            }
+
+            try {
+                await servicesAPI.save(name, price);
+                newServiceName.value = '';
+                newServicePrice.value = '';
+                // No need to call renderPrices - real-time listener handles it
+            } catch (error) {
+                console.error('Error agregando servicio:', error);
+                alert('Error al agregar el servicio.');
+            }
+        });
+
+        // Save all prices (reads all inputs)
+        savePricesBtn.addEventListener('click', async () => {
+            const inputs = pricesContainer.querySelectorAll('input[type="number"]');
+            
+            try {
+                const promises = [];
+                inputs.forEach(inp => {
+                    const serviceName = inp.getAttribute('data-service-name');
+                    const price = parseFloat(inp.value) || 0;
+                    if (serviceName) {
+                        promises.push(servicesAPI.save(serviceName, price));
+                    }
+                });
+                
+                await Promise.all(promises);
+                alert('✅ Precios guardados correctamente.');
+            } catch (error) {
+                console.error('Error guardando precios:', error);
+                alert('Error al guardar algunos precios. Verifica la consola.');
+            }
+        });
+
+        // Reset to defaults
+        resetDefaultBtn.addEventListener('click', async () => {
+            if (!confirm('Restaurar precios por defecto? Se reemplazarán los valores actuales.')) return;
+            
+            try {
+                // Delete all current services
+                for (const service of currentServices) {
+                    await servicesAPI.delete(service.name);
+                }
+                
+                // Initialize defaults
+                await servicesAPI.initDefaults();
+                alert('✅ Precios restaurados por defecto.');
+            } catch (error) {
+                console.error('Error restaurando defaults:', error);
+                alert('Error al restaurar precios.');
+            }
+        });
+
+        // Clear all
+        clearAllBtn.addEventListener('click', async () => {
+            if (!confirm('Eliminar todos los servicios? Esta acción no se puede deshacer.')) return;
+            
+            try {
+                for (const service of currentServices) {
+                    await servicesAPI.delete(service.name);
+                }
+                alert('✅ Todos los servicios eliminados.');
+            } catch (error) {
+                console.error('Error eliminando servicios:', error);
+                alert('Error al eliminar servicios.');
+            }
+        });
+
+        // Initialize
+        (async () => {
+            await loadPrices();
+            setupRealtimeListener();
+        })();
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (unsubscribe) unsubscribe();
+        });
+
+    </script>
+</body>
+</html>

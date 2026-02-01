@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Turnos</title>
+    <!-- Carga de Tailwind CSS para un diseño moderno y responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles_shared.css">
+    
+    <!-- Configuración personalizada de Tailwind para el color azul y la fuente Inter -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-blue': '#2563EB', // Un azul vibrante
+                        'primary-blue-dark': '#1D4ED8',
+                        'cancel-red': '#EF4444',
+                        'cancel-red-dark': '#B91C1C',
+                        'success-green': '#10B981',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Estilo base para el cuerpo y el fondo (delegado al shared stylesheet) */
+        body { font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+        /* Estilo para el contenedor principal centrado */
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        /* Estilo para los inputs y selects */
+        .form-input {
+            @apply w-full p-3 border border-gray-300 rounded-lg text-base 
+                   focus:ring-2 focus:ring-primary-blue focus:border-primary-blue transition duration-150;
+        }
+
+        /* Estilo para los botones principales de acción */
+        .main-option-btn {
+             @apply py-3 px-4 text-sm font-semibold rounded-lg shadow-md 
+                    transition duration-300 ease-in-out transform hover:scale-[1.01] 
+                    focus:outline-none focus:ring-2 focus:ring-offset-2;
+        }
+
+        /* Estilo específico para el botón de anular que ahora es de acción */
+        #cancelTurnosBtn {
+            @apply bg-cancel-red text-white hover:bg-cancel-red-dark focus:ring-cancel-red;
+        }
+    </style>
+</head>
+<body onload="renderTurnosPage()">
+
+    <!-- PÁGINA PRINCIPAL -->
+    <div class="app-container">
+
+        <!-- Título de la Barbershop -->
+        <h1 class="neon-title text-4xl font-extrabold mb-8 tracking-wide">
+            BLESS BARBERSHOP
+        </h1>
+
+        <!-- Contenedor Principal (Tarjeta) -->
+        <div class="w-full max-w-2xl bg-white shadow-2xl rounded-xl p-6 md:p-10 space-y-6">
+            
+            <!-- Título de la Sección -->
+            <header class="text-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800">Turnos</h2>
+                <p class="text-gray-500 text-sm">Gestión de la agenda de clientes.</p>
+            </header>
+
+            <!-- 1. Contenedor del Contenido Dinámico (Lista o Mensaje de No Turnos) -->
+            <div id="dynamicContent" class="space-y-4">
+                <!-- El contenido (lista o mensaje) se inyecta aquí por JavaScript -->
+            </div>
+            
+            <!-- 2. Contenedor de Opciones de Acción (Botones) -->
+            <div id="actionButtons" class="flex justify-center gap-4 border-t border-gray-100 pt-6">
+                <!-- Los botones se inyectan aquí por JavaScript -->
+            </div>
+
+            <!-- 3. Contenedor para la Interacción En Línea (Formularios) -->
+            <div id="actionForms" class="pt-6 space-y-4 hidden border-t border-gray-100">
+                
+                <!-- SECCIÓN: AGREGAR TURNO (INLINE) -->
+                <div id="addTurnoSection" class="hidden bg-blue-50 p-5 rounded-xl border border-primary-blue/30">
+                    <h3 class="text-xl font-bold text-primary-blue mb-4">✍️ Nuevo Turno</h3>
+                    <form id="addTurnoForm" class="space-y-4">
+                        
+                        <div>
+                            <label for="clienteName" class="block text-sm font-medium text-gray-700">Nombre del Cliente</label>
+                            <input type="text" id="clienteName" class="form-input" placeholder="Nombre completo" required>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <div class="flex-1">
+                                <label for="turnoDate" class="block text-sm font-medium text-gray-700">Día</label>
+                                <input type="date" id="turnoDate" class="form-input" required>
+                            </div>
+                            <div class="flex-1">
+                                <label for="turnoTime" class="block text-sm font-medium text-gray-700">Hora</label>
+                                <input type="time" id="turnoTime" class="form-input" required>
+                            </div>
+                        </div>
+                        
+                        <div id="addTurnoMessage" class="hidden p-2 text-center text-sm rounded-lg"></div>
+
+                        <div class="flex justify-end space-x-3 pt-2">
+                            <button type="button" onclick="renderTurnosPage()" 
+                                    class="py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                                Cancelar
+                            </button>
+                            <button type="submit" 
+                                    class="py-2 px-4 bg-primary-blue text-white rounded-lg hover:bg-primary-blue-dark transition">
+                                Guardar Turno
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- SECCIÓN: ANULAR TURNO (INLINE) -->
+                <!-- Esta sección solo contendrá el botón de eliminar y mensaje, 
+                     ya que la lista con checkboxes se moverá a #dynamicContent -->
+                <div id="cancelTurnoSection" class="hidden bg-red-50 p-5 rounded-xl border border-cancel-red/30">
+                    <h3 class="text-xl font-bold text-cancel-red mb-4">🗑️ Confirmar Anulación</h3>
+                    <p class="text-sm text-gray-600 mb-4">Verifica los turnos marcados arriba y confirma la eliminación.</p>
+                    
+                    <form id="cancelTurnoForm">
+                        <!-- El listado de turnos con checkboxes está arriba en #dynamicContent -->
+                        
+                        <div id="cancelTurnoMessage" class="hidden p-2 mt-4 text-center text-sm rounded-lg"></div>
+
+                        <div class="flex justify-end space-x-3 pt-4">
+                            <button type="button" onclick="renderTurnosPage()" 
+                                    class="py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                                Descartar Cambios
+                            </button>
+                            <button type="submit" 
+                                    class="py-2 px-4 bg-cancel-red text-white rounded-lg hover:bg-cancel-red-dark transition">
+                                Eliminar Turno(s)
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+            </div> <!-- Fin #actionForms -->
+
+        </div> <!-- Fin .w-full.max-w-xl -->
+
+        <!-- Vínculo para volver (simulación de navegación) -->
+        <a href="index_admin.html" class="mt-6 text-sm text-primary-blue hover:text-primary-blue-dark transition duration-150 ease-in-out font-medium">
+            Volver a la Página Principal
+        </a>
+    </div>
+
+    <script>
+        // Array para simular la base de datos de turnos
+        // INICIALIZADO VACÍO: La aplicación comienza sin turnos reservados.
+        let turnosData = []; 
+        let nextTurnoId = 1; // El ID comienza en 1
+        
+        // --- FUNCIONES DE RENDERIZADO PRINCIPALES ---
+
+        /**
+         * Función principal que renderiza toda la página basada en el estado actual (turnosData).
+         */
+        function renderTurnosPage() {
+            const dynamicContent = document.getElementById('dynamicContent');
+            const actionButtons = document.getElementById('actionButtons');
+            const actionForms = document.getElementById('actionForms');
+            
+            // Ocultar todas las secciones de formularios
+            actionForms.classList.add('hidden');
+            document.getElementById('addTurnoSection').classList.add('hidden');
+            document.getElementById('cancelTurnoSection').classList.add('hidden');
+            actionButtons.classList.remove('hidden');
+
+            // 1. Mostrar contenido dinámico y botones según si hay turnos
+            if (turnosData.length === 0) {
+                // No hay turnos
+                dynamicContent.innerHTML = `
+                    <div class="bg-gray-50 p-6 rounded-xl border border-dashed border-gray-300 text-center space-y-2">
+                        <p class="text-lg font-medium text-gray-700">No hay turnos reservados.</p>
+                        <p class="text-sm text-gray-500">Agrega el primer turno para empezar a gestionar la agenda.</p>
+                    </div>
+                `;
+                // Solo botón de Agregar Turno
+                actionButtons.innerHTML = `
+                    <button onclick="showAddForm()"
+                            class="main-option-btn bg-primary-blue text-white hover:bg-primary-blue-dark focus:ring-primary-blue/50 w-full">
+                        Agregar Turno
+                    </button>
+                `;
+            } else {
+                // Hay turnos: Muestra la lista simple
+                dynamicContent.innerHTML = renderTurnosListHtml(false);
+                
+                // Mostrar todos los botones
+                actionButtons.innerHTML = `
+                    <button onclick="showAddForm()"
+                            class="main-option-btn bg-primary-blue text-white hover:bg-primary-blue-dark focus:ring-primary-blue/50 flex-1">
+                        Agregar Turno
+                    </button>
+                    <!-- Este botón ahora sólo resetea la vista a la lista si se está en un formulario -->
+                    <button onclick="renderTurnosPage()" 
+                            class="main-option-btn bg-gray-100 text-primary-blue border-2 border-primary-blue hover:bg-gray-200 focus:ring-primary-blue/50 flex-1">
+                        Ver Turnos Agendados
+                    </button>
+                    <button onclick="showCancelForm()"
+                            class="main-option-btn bg-cancel-red text-white hover:bg-cancel-red-dark focus:ring-cancel-red/50 flex-1">
+                        Anular Turno
+                    </button>
+                `;
+            }
+            
+            // Limpiar mensajes al cambiar de vista
+            document.getElementById('addTurnoMessage').classList.add('hidden');
+            document.getElementById('cancelTurnoMessage').classList.add('hidden');
+        }
+
+        /**
+         * Genera el HTML para la lista de turnos, con o sin checkboxes.
+         * @param {boolean} isCancelMode - Si es verdadero, incluye checkboxes para anular.
+         * @returns {string} HTML de la lista.
+         */
+        function renderTurnosListHtml(isCancelMode) {
+            // Ordenar los turnos por fecha y hora
+            const sortedTurnos = [...turnosData].sort((a, b) => {
+                const dateTimeA = new Date(`${a.dia}T${a.hora}`);
+                const dateTimeB = new Date(`${b.dia}T${b.hora}`);
+                return dateTimeA - dateTimeB;
+            });
+
+            const listHtml = sortedTurnos.map(turno => {
+                const dateParts = turno.dia.split('-');
+                const formattedDate = `${dateParts[2]}/${dateParts[1]}`; // DD/MM
+                
+                if (isCancelMode) {
+                    // Modo Anular: con checkbox
+                    return `
+                        <div class="flex items-center justify-between p-3 bg-red-50 hover:bg-red-100 rounded-lg transition">
+                            <label for="turno-${turno.id}" class="flex-grow flex justify-between cursor-pointer">
+                                <span class="font-medium text-gray-800">${turno.cliente}</span>
+                                <span class="text-sm text-gray-600">${formattedDate} - ${turno.hora}</span>
+                            </label>
+                            <input type="checkbox" name="turnoId" value="${turno.id}" id="turno-${turno.id}" 
+                                   class="ml-4 h-5 w-5 text-cancel-red rounded border-gray-300 focus:ring-cancel-red">
+                        </div>
+                    `;
+                } else {
+                    // Modo Ver: solo visualización
+                    return `
+                        <div class="flex justify-between p-3 bg-white hover:bg-gray-50 rounded-lg shadow-sm border-l-4 border-primary-blue transition">
+                            <span class="font-semibold text-primary-blue-dark">${turno.cliente}</span>
+                            <span class="text-sm text-gray-600 font-medium">${formattedDate} - ${turno.hora}</span>
+                        </div>
+                    `;
+                }
+            }).join('');
+
+            return `
+                <div class="max-h-96 overflow-y-auto border border-gray-200 rounded-xl p-4 space-y-2">
+                    ${listHtml}
+                </div>
+            `;
+        }
+
+        // --- GESTIÓN DE VISTAS EN LÍNEA ---
+
+        /** Muestra el formulario para agregar un turno. */
+        function showAddForm() {
+            document.getElementById('actionButtons').classList.add('hidden'); // Oculta los botones
+            document.getElementById('actionForms').classList.remove('hidden'); // Muestra el contenedor de formularios
+            document.getElementById('addTurnoSection').classList.remove('hidden'); // Muestra solo el formulario de agregar
+            document.getElementById('addTurnoForm').reset(); // Limpiar formulario
+            document.getElementById('addTurnoMessage').classList.add('hidden');
+        }
+
+        /** Muestra la lista en modo anular (con checkboxes) y el botón de confirmación. */
+        function showCancelForm() {
+            document.getElementById('actionButtons').classList.add('hidden'); // Oculta los botones
+            document.getElementById('actionForms').classList.remove('hidden'); // Muestra el contenedor de formularios
+            document.getElementById('cancelTurnoSection').classList.remove('hidden'); // Muestra el botón de eliminar
+            document.getElementById('dynamicContent').innerHTML = renderTurnosListHtml(true); // Actualiza la lista con checkboxes
+            document.getElementById('cancelTurnoMessage').classList.add('hidden');
+        }
+
+
+        // --- LÓGICA DE AGREGAR TURNO ---
+        
+        const addTurnoForm = document.getElementById('addTurnoForm');
+        addTurnoForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('clienteName').value.trim();
+            const date = document.getElementById('turnoDate').value;
+            const time = document.getElementById('turnoTime').value;
+            const messageEl = document.getElementById('addTurnoMessage');
+
+            if (!name || !date || !time) {
+                showMessage(messageEl, 'Por favor, complete todos los campos.', 'error');
+                return;
+            }
+
+            const nuevoTurno = {
+                id: nextTurnoId++,
+                cliente: name,
+                dia: date,
+                hora: time
+            };
+
+            turnosData.push(nuevoTurno);
+            
+            showMessage(messageEl, `Turno para ${name} guardado con éxito. La vista se actualizará en 3s.`, 'success');
+            
+            addTurnoForm.reset();
+            
+            // Retrasar el renderizado para que el usuario pueda ver el mensaje de éxito
+            setTimeout(renderTurnosPage, 3000); 
+        });
+
+        // --- LÓGICA DE ANULAR TURNO ---
+
+        const cancelTurnoForm = document.getElementById('cancelTurnoForm');
+        cancelTurnoForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // Obtener todos los checkboxes dentro del dynamicContent
+            const selectedTurnos = Array.from(document.querySelectorAll('#dynamicContent input[name="turnoId"]:checked'))
+                                        .map(checkbox => parseInt(checkbox.value));
+            const messageEl = document.getElementById('cancelTurnoMessage');
+
+            if (selectedTurnos.length === 0) {
+                showMessage(messageEl, 'Por favor, seleccione al menos un turno para anular.', 'error');
+                return;
+            }
+
+            const turnosAnulados = turnosData.filter(t => selectedTurnos.includes(t.id)).map(t => t.cliente).join(', ');
+            turnosData = turnosData.filter(t => !selectedTurnos.includes(t.id));
+
+            showMessage(messageEl, `Se eliminaron ${selectedTurnos.length} turno(s): ${turnosAnulados}. La vista se actualizará en 3s.`, 'success');
+            
+            // Retrasar el renderizado para que el usuario pueda ver el mensaje de éxito
+            setTimeout(renderTurnosPage, 3000); 
+        });
+
+
+        // --- FUNCIÓN UTILITARIA PARA MENSAJES ---
+
+        /**
+         * Muestra un mensaje temporal de éxito o error.
+         */
+        function showMessage(el, message, type) {
+            el.textContent = message;
+            el.classList.remove('hidden', 'bg-red-100', 'text-error-red', 'bg-green-100', 'text-success-green', 'border-success-green', 'border-error-red');
+            
+            const errorColor = 'rgb(185, 28, 28)'; // B91C1C
+            const successColor = 'rgb(16, 185, 129)'; // 10B981
+
+            if (type === 'success') {
+                el.classList.add('bg-green-100', 'text-success-green');
+                el.style.border = `1px solid ${successColor}`;
+            } else {
+                el.classList.add('bg-red-100', 'text-error-red');
+                el.style.border = `1px solid ${errorColor}`;
+            }
+
+            // Ocultar mensaje después de 5 segundos
+            setTimeout(() => {
+                el.classList.add('hidden');
+                el.style.border = 'none';
+            }, 5000);
+        }
+
+    </script>
+</body>
+</html>
