@@ -10,6 +10,56 @@
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-6">
+    <!-- Modal para editar cliente -->
+    <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="p-6 bg-blue-600 text-white flex justify-between items-center sticky top-0">
+                <h3 class="text-xl font-bold">Editar Cliente</h3>
+                <button type="button" id="closeEditModal" class="text-white hover:text-gray-200 text-2xl">&times;</button>
+            </div>
+            
+            <form id="editForm" class="space-y-4 bg-gray-50 p-4">
+                <div>
+                    <label class="block text-sm font-medium text-black">Nombre</label>
+                    <input id="editName" class="mt-1 block w-full border rounded px-3 py-2 text-black font-medium" required />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-black">DNI</label>
+                    <input id="editDNI" class="mt-1 block w-full border rounded px-3 py-2 text-black font-medium" pattern="[0-9]{1,15}" required />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-black">Dirección</label>
+                    <input id="editAddress" class="mt-1 block w-full border rounded px-3 py-2 text-black font-medium" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-black">Teléfono</label>
+                    <input id="editPhone" class="mt-1 block w-full border rounded px-3 py-2 text-black font-medium" pattern="[0-9+ ()-]{6,}" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-black">Fecha de cumpleaños</label>
+                    <input id="editBirthday" type="date" class="mt-1 block w-full border rounded px-3 py-2 text-black font-medium" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-black">Foto</label>
+                    <div class="mt-1 flex items-center gap-4">
+                        <input id="editPhoto" type="file" accept="image/*" class="block" />
+                        <img id="editPhotoPreview" src="" alt="Preview" class="h-12 w-12 object-cover rounded-full hidden border" />
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">Guardar Cambios</button>
+                    <button type="button" class="px-4 py-2 border rounded" onclick="document.getElementById('editModal').classList.add('hidden')">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="w-full max-w-2xl bg-white rounded-xl shadow-xl p-6 text-gray-800">
         <div class="flex items-center justify-center mb-4">
             <h2 class="text-3xl md:text-4xl font-bold text-blue-600 text-center">Agregar Clientes</h2>
@@ -19,6 +69,11 @@
             <div>
                 <label class="block text-sm font-medium">Nombre</label>
                 <input id="name" class="mt-1 block w-full border rounded px-3 py-2" required />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium">DNI</label>
+                <input id="dni" class="mt-1 block w-full border rounded px-3 py-2" pattern="[0-9]{1,15}" placeholder="Ej: 12345678" required />
             </div>
 
             <div>
@@ -69,6 +124,7 @@
 
         const form = document.getElementById('clientForm');
         const nameInput = document.getElementById('name');
+        const dniInput = document.getElementById('dni');
         const addressInput = document.getElementById('address');
         const phoneInput = document.getElementById('phone');
         const birthdayInput = document.getElementById('birthday');
@@ -76,6 +132,31 @@
         const photoPreview = document.getElementById('photoPreview');
         const clientsList = document.getElementById('clientsList');
         const clearBtn = document.getElementById('clearBtn');
+
+        // Modal de edición
+        const editModal = document.getElementById('editModal');
+        const closeEditModal = document.getElementById('closeEditModal');
+        const editForm = document.getElementById('editForm');
+        const editNameInput = document.getElementById('editName');
+        const editDNIInput = document.getElementById('editDNI');
+        const editAddressInput = document.getElementById('editAddress');
+        const editPhoneInput = document.getElementById('editPhone');
+        const editBirthdayInput = document.getElementById('editBirthday');
+        const editPhotoInput = document.getElementById('editPhoto');
+        const editPhotoPreview = document.getElementById('editPhotoPreview');
+
+        let editingClientId = null; // Para almacenar el ID del cliente que se está editando
+
+        // Cerrar modal
+        closeEditModal.addEventListener('click', () => {
+            editModal.classList.add('hidden');
+        });
+
+        editModal.addEventListener('click', (e) => {
+            if (e.target === editModal) {
+                editModal.classList.add('hidden');
+            }
+        });
 
         // --- FUNCIONES DE PERSISTENCIA EN FIRESTORE ---
 
@@ -118,14 +199,23 @@
 
                 const info = document.createElement('div');
                 info.innerHTML = `<div class="font-semibold">${escapeHtml(c.name)}</div>
-                                  <div class="text-sm text-gray-600">${escapeHtml(c.phone || '')} • ${escapeHtml(c.address || '')}</div>
+                                  <div class="text-sm text-gray-600">DNI: ${escapeHtml(c.dni || '-')} • ${escapeHtml(c.phone || '')} • ${escapeHtml(c.address || '')}</div>
                                   <div class="text-xs text-gray-500">Cumple: ${c.birthday || '-'}</div>`;
 
                 const btns = document.createElement('div');
                 btns.className = 'ml-auto flex gap-2 items-center';
 
+                const edit = document.createElement('button');
+                edit.type = 'button';
+                edit.className = 'px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600';
+                edit.textContent = 'Editar';
+                edit.addEventListener('click', () => {
+                    openEditModal(c);
+                });
+
                 const del = document.createElement('button');
-                del.className = 'px-3 py-1 bg-red-500 text-white rounded text-sm';
+                del.type = 'button';
+                del.className = 'px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600';
                 del.textContent = 'Eliminar';
                 del.addEventListener('click', async () => { 
                     if (confirm(`¿Eliminar a ${c.name}?`)) {
@@ -135,6 +225,7 @@
                     }
                 });
 
+                btns.appendChild(edit);
                 btns.appendChild(del);
 
                 card.appendChild(img);
@@ -148,6 +239,89 @@
         function escapeHtml(s) {
             return String(s || '').replace(/[&<>"]/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
         }
+
+        /**
+         * Abre el modal de edición con los datos del cliente
+         */
+        function openEditModal(client) {
+            editingClientId = client.id;
+            editNameInput.value = client.name;
+            editDNIInput.value = client.dni || '';
+            editAddressInput.value = client.address || '';
+            editPhoneInput.value = client.phone || '';
+            editBirthdayInput.value = client.birthday || '';
+            
+            // Mostrar foto existente si existe
+            if (client.photoURL) {
+                editPhotoPreview.src = client.photoURL;
+                editPhotoPreview.classList.remove('hidden');
+            } else {
+                editPhotoPreview.src = '';
+                editPhotoPreview.classList.add('hidden');
+            }
+            
+            editPhotoInput.value = ''; // Limpiar input de archivo
+            editModal.classList.remove('hidden');
+        }
+
+        /**
+         * Guarda los cambios del cliente editado
+         */
+        editForm.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            
+            if (!editNameInput.value.trim()) return alert('Nombre requerido');
+            if (!editDNIInput.value.trim()) return alert('DNI requerido');
+
+            const photoFile = editPhotoInput.files && editPhotoInput.files[0];
+
+            const updatedData = {
+                name: editNameInput.value.trim(),
+                dni: editDNIInput.value.trim(),
+                address: editAddressInput.value.trim(),
+                phone: editPhoneInput.value.trim(),
+                birthday: editBirthdayInput.value
+            };
+
+            const submitBtn = editForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Guardando...';
+
+            try {
+                await clientsAPI.update(editingClientId, updatedData, photoFile);
+                
+                console.log('--- Cliente actualizado en Firestore ---');
+                console.log(updatedData);
+                
+                await renderClients();
+                editModal.classList.add('hidden');
+                
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Guardar Cambios';
+            } catch (error) {
+                console.error('Error al actualizar cliente:', error);
+                alert('Error al actualizar el cliente. Por favor intente nuevamente.');
+                
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Guardar Cambios';
+            }
+        });
+
+        editPhotoInput.addEventListener('change', (e) => {
+            const f = e.target.files && e.target.files[0];
+            if (!f) { 
+                editPhotoPreview.src = ''; 
+                editPhotoPreview.classList.add('hidden'); 
+                return; 
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                editPhotoPreview.src = evt.target.result;
+                editPhotoPreview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(f);
+        });
 
         /**
          * Elimina un cliente de Firestore y Storage
@@ -180,11 +354,13 @@
         form.addEventListener('submit', async (ev) => {
             ev.preventDefault();
             if (!nameInput.value.trim()) return alert('Nombre requerido');
+            if (!dniInput.value.trim()) return alert('DNI requerido');
 
             const photoFile = photoInput.files && photoInput.files[0];
 
             const clientData = {
                 name: nameInput.value.trim(),
+                dni: dniInput.value.trim(),
                 address: addressInput.value.trim(),
                 phone: phoneInput.value.trim(),
                 birthday: birthdayInput.value

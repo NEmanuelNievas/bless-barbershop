@@ -299,6 +299,30 @@
                 </div>
             </div>
 
+            <!-- 1.6 SELECCIÓN DE CLIENTE POR DNI -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-primary-blue border-b pb-2">Cliente (Opcional)</h3>
+
+                <div class="space-y-3">
+                    <div class="relative">
+                        <label for="clientDNI" class="block text-sm font-medium text-gray-700 mb-1">DNI del Cliente</label>
+                        <input id="clientDNI" type="text" placeholder="Ingresa DNI del cliente" 
+                            class="w-full p-3 border border-gray-300 rounded-lg text-gray-700
+                                  focus:ring-2 focus:ring-primary-blue focus:border-primary-blue transition duration-150">
+                    </div>
+                    <div id="clientInfo" class="hidden p-3 bg-green-50 border border-green-300 rounded-lg">
+                        <p class="text-sm text-green-700">
+                            <span class="font-semibold">Cliente encontrado: </span>
+                            <span id="clientNameDisplay" class="font-bold text-green-900"></span>
+                        </p>
+                    </div>
+                    <div id="clientError" class="hidden p-3 bg-red-50 border border-red-300 rounded-lg">
+                        <p class="text-sm text-red-700">Cliente no encontrado. Verifica el DNI.</p>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500">Ingresa el DNI del cliente para registrar el corte en su historial.</p>
+            </div>
+
             <!-- Divisor -->
             <hr class="border-t border-gray-200 my-6">
 
@@ -359,7 +383,7 @@
                         </svg>
                     </span>
               <input type="text" id="totalAmount" placeholder="Total calculado" readonly
-                  class="w-full p-3 border border-gray-300 rounded-lg text-lg text-right pl-12 bg-gray-50 
+                  class="w-full p-3 border border-gray-300 rounded-lg text-lg text-right pl-12 bg-gray-50 text-black
                       focus:ring-2 focus:ring-primary-blue focus:border-primary-blue transition duration-150">
                 </div>
 
@@ -387,7 +411,7 @@
         </div>
 
         <!-- Vínculo para volver (simulación de navegación) -->
-        <a href="index_admin.html" class="mt-6 text-sm text-primary-blue hover:text-primary-blue-dark transition duration-150 ease-in-out font-medium">
+        <a href="index_employee.html" class="mt-6 text-sm text-primary-blue hover:text-primary-blue-dark transition duration-150 ease-in-out font-medium">
             Volver a la Página Principal
         </a>
 
@@ -395,12 +419,16 @@
 
     <script type="module">
     // Lógica de JavaScript para el Ticket de Pago y la Transacción
-    import { servicesAPI, transactionsAPI, settingsAPI } from './firebase-config.js';
+    import { servicesAPI, transactionsAPI, settingsAPI, clientsAPI } from './firebase-config.js';
         
     const totalAmountInput = document.getElementById('totalAmount');
         const chargeButton = document.getElementById('chargeButton');
         const resultMessage = document.getElementById('resultMessage');
         const serviceForm = document.getElementById('serviceForm');
+        const clientDNI = document.getElementById('clientDNI');
+        const clientInfo = document.getElementById('clientInfo');
+        const clientError = document.getElementById('clientError');
+        const clientNameDisplay = document.getElementById('clientNameDisplay');
         
         const ticketModal = document.getElementById('ticketModal');
         const closeTicketButton = document.getElementById('closeTicketButton');
@@ -411,6 +439,9 @@
     const ticketDate = document.getElementById('ticketDate');
         const ticketOperator = document.getElementById('ticketOperator');
         const operatorSelect = document.getElementById('operatorSelect');
+
+        // Variable global para almacenar el cliente encontrado
+        let selectedClient = null;
 
         // --- FUNCIONES DE PERSISTENCIA (MIGRADAS A FIRESTORE) ---
         
@@ -426,6 +457,53 @@
                 return [];
             }
         }
+
+        /**
+         * Busca un cliente por DNI
+         */
+        async function searchClientByDNI(dni) {
+            try {
+                if (!dni || dni.trim() === '') {
+                    selectedClient = null;
+                    clientInfo.classList.add('hidden');
+                    clientError.classList.add('hidden');
+                    return null;
+                }
+
+                const clients = await clientsAPI.getAll();
+                const foundClient = clients.find(c => c.dni === dni.trim());
+                
+                if (foundClient) {
+                    selectedClient = foundClient;
+                    clientNameDisplay.textContent = foundClient.name;
+                    clientInfo.classList.remove('hidden');
+                    clientError.classList.add('hidden');
+                    console.log('✅ Cliente encontrado:', foundClient.name);
+                    return foundClient;
+                } else {
+                    selectedClient = null;
+                    clientInfo.classList.add('hidden');
+                    clientError.classList.remove('hidden');
+                    console.log('❌ Cliente no encontrado para DNI:', dni);
+                    return null;
+                }
+            } catch (error) {
+                console.error('Error buscando cliente:', error);
+                selectedClient = null;
+                clientInfo.classList.add('hidden');
+                clientError.classList.remove('hidden');
+                return null;
+            }
+        }
+
+        // Event listener para buscar cliente cuando se ingresa el DNI
+        let dniSearchTimeout;
+        clientDNI.addEventListener('input', (e) => {
+            clearTimeout(dniSearchTimeout);
+            dniSearchTimeout = setTimeout(() => {
+                searchClientByDNI(e.target.value);
+            }, 300); // Esperar 300ms después de dejar de escribir
+        });
 
         /**
          * Agrega una nueva transacción a Firestore
@@ -585,8 +663,13 @@
                 const price = servicePrices[s] || 0;
                 sum += price;
             });
-            // Mostrar como número sin separadores y con dos decimales
-            totalAmountInput.value = sum > 0 ? sum.toFixed(2) : '';
+            // Mostrar como número sin separadores y con dos decimales, o mostrar $ si hay total
+            if (sum > 0) {
+                totalAmountInput.value = `$${sum.toFixed(2)}`;
+            } else {
+                totalAmountInput.value = '';
+            }
+            console.log('Total calculado:', sum, 'Servicios seleccionados:', selectedServices);
             return { sum, selectedServices };
         }
 
@@ -640,11 +723,14 @@
         // Función para manejar el click en el botón de cobro
         chargeButton.addEventListener('click', async () => {
             
-            const total = parseFloat(totalAmountInput.value);
+            // Extraer el valor numérico del total (remove $ if present)
+            const totalStr = totalAmountInput.value.replace('$', '').trim();
+            const total = parseFloat(totalStr);
             const selectedPayment = document.querySelector('input[name="pago"]:checked');
             const selectedServiceElements = document.querySelectorAll('input[name="servicio"]:checked');
             const selectedServices = Array.from(selectedServiceElements).map(cb => cb.value);
             const selectedOperator = operatorSelect ? operatorSelect.value : '';
+            const clientDNIValue = clientDNI.value.trim(); // DNI ingresado
 
             // 1. Validaciones
             if (selectedServices.length === 0) {
@@ -667,6 +753,13 @@
                 totalAmountInput.focus();
                 return;
             }
+
+            // Validar que si se ingresó un DNI, el cliente existe
+            if (clientDNIValue && !selectedClient) {
+                showMessage('El DNI ingresado no coincide con ningún cliente. Verifica los datos.', 'error');
+                clientDNI.focus();
+                return;
+            }
             
             // Ocultar mensaje de error si las validaciones pasan
             resultMessage.classList.add('hidden');
@@ -686,6 +779,8 @@
                     metodoPago: paymentType,
                     servicios: selectedServices,
                     operador: selectedOperator,
+                    clienteDNI: clientDNIValue || null, // DNI del cliente (puede ser null si no se ingresa)
+                    clienteName: selectedClient ? selectedClient.name : null, // Nombre del cliente
                     fecha: new Date().toISOString() // Fecha completa en formato ISO
                 };
 
@@ -693,15 +788,19 @@
                 await addTransaction(transactionData);
                 
                 console.log("--- Cobro Realizado y Guardado en Firestore ---");
-                console.log(`Monto: $${total.toFixed(2)} | Método: ${paymentType} | ID: ${transactionId}`);
+                console.log(`Monto: $${total.toFixed(2)} | Método: ${paymentType} | ID: ${transactionId} | Cliente: ${selectedClient ? selectedClient.name : 'N/A'}`);
                 console.log("-----------------------------------------------");
 
                 // 4. Mostrar el Ticket de Pago
-                showPaymentTicket(total, paymentType, selectedServices, transactionId, selectedOperator);
+                showPaymentTicket(total, paymentType, selectedServices, transactionId, selectedOperator, selectedClient ? selectedClient.name : null);
 
                 // Limpiar el formulario después del cobro exitoso
                 serviceForm.reset();
                 totalAmountInput.value = '';
+                clientDNI.value = ''; // Limpiar DNI
+                selectedClient = null;
+                clientInfo.classList.add('hidden');
+                clientError.classList.add('hidden');
                 
             } catch (error) {
                 console.error('Error al procesar el cobro:', error);
@@ -723,7 +822,7 @@
         /**
          * Muestra el modal del ticket con los datos de la transacción.
          */
-        function showPaymentTicket(total, paymentType, services, transactionId, operator) {
+        function showPaymentTicket(total, paymentType, services, transactionId, operator, clientName = null) {
             const totalFormatted = `$${total.toFixed(2)}`;
 
             // 1. Poblar la lista de servicios con precio por línea
@@ -746,7 +845,11 @@
 
             // Mostrar el operador en el ticket si se recibe
             if (ticketOperator) {
-                ticketOperator.textContent = operator ? (`Operador: ${operator}`) : '';
+                let operatorText = operator ? (`Operador: ${operator}`) : '';
+                if (clientName) {
+                    operatorText += ` | Cliente: ${clientName}`;
+                }
+                ticketOperator.textContent = operatorText;
             }
 
             // 3. Mostrar el modal

@@ -255,6 +255,7 @@ export const clientsAPI = {
         const clientsRef = collection(db, 'clients');
         const docRef = await addDoc(clientsRef, {
             name: client.name,
+            dni: client.dni || '',
             address: client.address || '',
             phone: client.phone || '',
             birthday: client.birthday || '',
@@ -280,6 +281,27 @@ export const clientsAPI = {
         const q = query(clientsRef, orderBy('name', 'asc'));
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    // Actualizar cliente
+    async update(clientId, clientData, photoFile = null) {
+        if (initializationFailed) return this._updateLocal(clientId, clientData);
+
+        let updateData = {
+            name: clientData.name,
+            dni: clientData.dni || '',
+            address: clientData.address || '',
+            phone: clientData.phone || '',
+            birthday: clientData.birthday || '',
+        };
+
+        // Si se proporciona una nueva foto, actualizar
+        if (photoFile) {
+            updateData.photoURL = await this._uploadPhoto(photoFile);
+        }
+
+        const clientRef = doc(db, 'clients', clientId);
+        await updateDoc(clientRef, updateData);
     },
 
     // Eliminar cliente
@@ -310,6 +332,15 @@ export const clientsAPI = {
 
     _getAllLocal() {
         return JSON.parse(localStorage.getItem('clientsData') || '[]');
+    },
+
+    _updateLocal(clientId, clientData) {
+        let clients = JSON.parse(localStorage.getItem('clientsData') || '[]');
+        const index = clients.findIndex(c => c.id === clientId);
+        if (index !== -1) {
+            clients[index] = { ...clients[index], ...clientData };
+            localStorage.setItem('clientsData', JSON.stringify(clients));
+        }
     },
 
     _deleteLocal(clientId) {

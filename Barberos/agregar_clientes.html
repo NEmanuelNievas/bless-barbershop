@@ -22,6 +22,11 @@
             </div>
 
             <div>
+                <label class="block text-sm font-medium">DNI</label>
+                <input id="dni" class="mt-1 block w-full border rounded px-3 py-2" pattern="[0-9]{1,15}" placeholder="Ej: 12345678" required />
+            </div>
+
+            <div>
                 <label class="block text-sm font-medium">Dirección</label>
                 <input id="address" class="mt-1 block w-full border rounded px-3 py-2" />
             </div>
@@ -53,29 +58,59 @@
 
         <hr class="my-4" />
 
-        <div>
+        <div id="clientsListContainer" class="hidden">
             <h3 class="text-lg font-semibold mb-2">Clientes guardados</h3>
             <div id="clientsList" class="space-y-3"></div>
         </div>
 
         <div class="mt-4 text-center">
-            <a href="index_admin.html" class="text-sm text-blue-600 hover:text-blue-700">← Volver a la página principal</a>
+            <a href="index_employee.html" class="text-sm text-blue-600 hover:text-blue-700">← Volver a la página principal</a>
         </div>
     </div>
 
     <script type="module">
         // --- FIREBASE IMPORTS ---
-        import { clientsAPI } from './firebase-config.js';
+        import { clientsAPI, transactionsAPI } from './firebase-config.js';
 
         const form = document.getElementById('clientForm');
         const nameInput = document.getElementById('name');
+        const dniInput = document.getElementById('dni');
         const addressInput = document.getElementById('address');
         const phoneInput = document.getElementById('phone');
         const birthdayInput = document.getElementById('birthday');
         const photoInput = document.getElementById('photo');
         const photoPreview = document.getElementById('photoPreview');
         const clientsList = document.getElementById('clientsList');
+        const clientsListContainer = document.getElementById('clientsListContainer');
         const clearBtn = document.getElementById('clearBtn');
+
+        // --- DETECCIÓN DE ROL DEL USUARIO ---
+        function detectUserRole() {
+            // Intentar detectar el rol del URL o del sessionStorage
+            const currentUrl = window.location.href;
+            const isEmployeePath = currentUrl.includes('index_employee');
+            const isAdminPath = currentUrl.includes('index_admin') || currentUrl.includes('Admin Def');
+            
+            if (isAdminPath) return 'admin';
+            if (isEmployeePath) return 'employee';
+            
+            // Si no se puede detectar por URL, verificar si hay dato guardado en sessionStorage
+            const savedRole = sessionStorage.getItem('userRole');
+            if (savedRole) return savedRole;
+            
+            // Asumimos employee por defecto para seguridad
+            return 'employee';
+        }
+
+        const userRole = detectUserRole();
+        console.log('📋 Rol del usuario detectado:', userRole);
+
+        // Mostrar lista de clientes solo para administrador
+        if (userRole === 'admin') {
+            clientsListContainer.classList.remove('hidden');
+        } else {
+            clientsListContainer.classList.add('hidden');
+        }
 
         // --- FUNCIONES DE PERSISTENCIA EN FIRESTORE ---
 
@@ -93,12 +128,76 @@
         }
 
         /**
+         * Carga todas las transacciones y calcula estadísticas por cliente
+         * @returns {Promise<Object>} Objeto con estadísticas por DNI
+         */
+        async function calculateClientStats() {
+            try {
+                const transactions = await transactionsAPI.getAll();
+                const stats = {}; // DNI => { cutsThisMonth, topBarber }
+
+                // Agrupar transacciones por cliente DNI
+                transactions.forEach(t => {
+                    const dni = t.clienteDNI;
+                    if (!dni) return; // Saltar transacciones sin cliente
+
+                    if (!stats[dni]) {
+                        stats[dni] = {
+                            cutsThisMonth: 0,
+                            totalCuts: 0,
+                            barberFrequency: {} // barbero => cantidad
+                        };
+                    }
+
+                    // Contar cortes este mes
+                    const transDate = new Date(t.fecha);
+                    const now = new Date();
+                    const isThisMonth = 
+                        transDate.getFullYear() === now.getFullYear() &&
+                        transDate.getMonth() === now.getMonth();
+
+                    if (isThisMonth) {
+                        stats[dni].cutsThisMonth += 1;
+                    }
+                    stats[dni].totalCuts += 1;
+
+                    // Registrar barbero más frecuente
+                    const barber = t.operador;
+                    if (barber) {
+                        stats[dni].barberFrequency[barber] = (stats[dni].barberFrequency[barber] || 0) + 1;
+                    }
+                });
+
+                return stats;
+            } catch (error) {
+                console.error('Error al calcular estadísticas:', error);
+                return {};
+            }
+        }
+
+        /**
+         * Obtiene el barbero más frecuente para un cliente
+         */
+        function getTopBarber(barberFrequency) {
+            let topBarber = 'N/A';
+            let maxCount = 0;
+            for (const [barber, count] of Object.entries(barberFrequency)) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    topBarber = barber;
+                }
+            }
+            return topBarber;
+        }
+
+        /**
          * Renderiza la lista de clientes en el DOM
          */
         async function renderClients() {
             clientsList.innerHTML = '<p class="text-sm text-gray-500">Cargando clientes...</p>';
             
             const clients = await loadClients();
+            const stats = await calculateClientStats();
             
             clientsList.innerHTML = '';
             if (clients.length === 0) {
@@ -117,9 +216,12 @@
                 img.onerror = () => { img.src = ''; }; // Fallback si no carga la imagen
 
                 const info = document.createElement('div');
+                const clientStats = stats[c.dni] || { cutsThisMonth: 0, barberFrequency: {} };
+                const topBarber = getTopBarber(clientStats.barberFrequency);
+                
                 info.innerHTML = `<div class="font-semibold">${escapeHtml(c.name)}</div>
-                                  <div class="text-sm text-gray-600">${escapeHtml(c.phone || '')} • ${escapeHtml(c.address || '')}</div>
-                                  <div class="text-xs text-gray-500">Cumple: ${c.birthday || '-'}</div>`;
+                                  <div class="text-sm text-gray-600">DNI: ${escapeHtml(c.dni || '-')} • ${escapeHtml(c.phone || '')} • ${escapeHtml(c.address || '')}</div>
+                                  <div class="text-xs text-gray-500">Cumple: ${c.birthday || '-'} • Cortes este mes: ${clientStats.cutsThisMonth} • Barbero favorito: ${topBarber}</div>`;
 
                 const btns = document.createElement('div');
                 btns.className = 'ml-auto flex gap-2 items-center';
@@ -180,11 +282,13 @@
         form.addEventListener('submit', async (ev) => {
             ev.preventDefault();
             if (!nameInput.value.trim()) return alert('Nombre requerido');
+            if (!dniInput.value.trim()) return alert('DNI requerido');
 
             const photoFile = photoInput.files && photoInput.files[0];
 
             const clientData = {
                 name: nameInput.value.trim(),
+                dni: dniInput.value.trim(),
                 address: addressInput.value.trim(),
                 phone: phoneInput.value.trim(),
                 birthday: birthdayInput.value
