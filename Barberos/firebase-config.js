@@ -9,8 +9,16 @@ import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateD
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
 // --- Configuración de Firebase ---
-const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const firebaseConfig = {
+  apiKey: "AIzaSyDZcbXf9j8-m1rZrp9IocnwAH2iMSd1ROs",
+  authDomain: "barberia-bless.firebaseapp.com",
+  projectId: "barberia-bless",
+  storageBucket: "barberia-bless.firebasestorage.app",
+  messagingSenderId: "141615150603",
+  appId: "1:141615150603:web:b81230202000f198b4b90e",
+  measurementId: "G-9E11Y5D6H6"
+};
+const appId = "1:141615150603:web:b81230202000f198b4b90e";
 
 // --- Inicialización ---
 let app;
