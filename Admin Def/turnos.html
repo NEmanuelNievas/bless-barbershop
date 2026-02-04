@@ -116,6 +116,11 @@
                         
                         <div id="addTurnoMessage" class="hidden p-2 text-center text-sm rounded-lg"></div>
 
+                        <!-- Contenedor para Errores de Validación -->
+                        <div id="validationErrors" class="hidden mt-3" role="alert">
+                            <!-- Se pobla con errores de validación si las reglas fallan -->
+                        </div>
+
                         <div class="flex justify-end space-x-3 pt-2">
                             <button type="button" onclick="renderTurnosPage()" 
                                     class="py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
@@ -164,7 +169,10 @@
         </a>
     </div>
 
-    <script>
+    <script type="module">
+        // --- FIREBASE IMPORTS ---
+        import { validateFields, displayValidationErrors, clearValidationErrors } from './validation-utils.js';
+        
         // Array para simular la base de datos de turnos
         // INICIALIZADO VACÍO: La aplicación comienza sin turnos reservados.
         let turnosData = []; 
@@ -308,8 +316,27 @@
             const time = document.getElementById('turnoTime').value;
             const messageEl = document.getElementById('addTurnoMessage');
 
-            if (!name || !date || !time) {
-                showMessage(messageEl, 'Por favor, complete todos los campos.', 'error');
+            // Limpiar errores anteriores
+            clearValidationErrors('validationErrors');
+
+            // Validar con validation-utils
+            const validationResult = validateFields({
+                cliente: { 
+                    value: name, 
+                    rules: [['required', 'Nombre del cliente'], ['stringLength', 2, 100, 'Nombre']] 
+                },
+                fecha: { 
+                    value: date, 
+                    rules: [['required', 'Fecha del turno']] 
+                },
+                hora: { 
+                    value: time, 
+                    rules: [['required', 'Hora del turno']] 
+                }
+            });
+
+            if (!validationResult.valid) {
+                displayValidationErrors(validationResult.errors, 'validationErrors');
                 return;
             }
 
@@ -322,7 +349,7 @@
 
             turnosData.push(nuevoTurno);
             
-            showMessage(messageEl, `Turno para ${name} guardado con éxito. La vista se actualizará en 3s.`, 'success');
+            showMessage(messageEl, `✅ Turno para ${name} guardado con éxito. La vista se actualizará en 3s.`, 'success');
             
             addTurnoForm.reset();
             

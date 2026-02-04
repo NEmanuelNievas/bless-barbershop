@@ -104,6 +104,11 @@
                 <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">Agregar Cliente</button>
                 <button type="button" id="clearBtn" class="px-4 py-2 border rounded">Limpiar</button>
             </div>
+
+            <!-- Contenedor para Errores de Validación -->
+            <div id="validationErrors" class="hidden mt-6" role="alert">
+                <!-- Se pobla con errores de validación si las reglas fallan -->
+            </div>
         </form>
 
         <hr class="my-4" />
@@ -121,6 +126,7 @@
     <script type="module">
         // --- FIREBASE IMPORTS ---
         import { clientsAPI } from './firebase-config.js';
+        import { validateFields, displayValidationErrors, clearValidationErrors, validateFile } from './validation-utils.js';
 
         const form = document.getElementById('clientForm');
         const nameInput = document.getElementById('name');
@@ -353,10 +359,38 @@
 
         form.addEventListener('submit', async (ev) => {
             ev.preventDefault();
-            if (!nameInput.value.trim()) return alert('Nombre requerido');
-            if (!dniInput.value.trim()) return alert('DNI requerido');
+            
+            // Validar con validation-utils
+            const validationResult = validateFields({
+                nombre: { 
+                    value: nameInput.value.trim(), 
+                    rules: [['required', 'Nombre'], ['stringLength', 2, 100, 'Nombre']] 
+                },
+                dni: { 
+                    value: dniInput.value.trim(), 
+                    rules: [['required', 'DNI'], ['dni', 'DNI']] 
+                },
+                telefono: { 
+                    value: phoneInput.value.trim(), 
+                    rules: phoneInput.value.trim() ? [['phone', 'Teléfono']] : [] 
+                }
+            });
 
+            if (!validationResult.valid) {
+                displayValidationErrors(validationResult.errors, 'validationErrors');
+                return;
+            }
+
+            // Validar archivo si existe
             const photoFile = photoInput.files && photoInput.files[0];
+            if (photoFile) {
+                const fileValidation = validateFile(photoFile, ['image/jpeg', 'image/png', 'image/gif'], 5);
+                if (!fileValidation.valid) {
+                    const errors = { foto: fileValidation.error };
+                    displayValidationErrors(errors, 'validationErrors');
+                    return;
+                }
+            }
 
             const clientData = {
                 name: nameInput.value.trim(),
@@ -374,7 +408,7 @@
             try {
                 await clientsAPI.create(clientData, photoFile);
                 
-                console.log('--- Cliente agregado a Firestore ---');
+                console.log('✅ Cliente agregado a Firestore con Validación');
                 console.log(clientData);
                 
                 await renderClients();
@@ -382,12 +416,13 @@
                 form.reset();
                 photoPreview.src = '';
                 photoPreview.classList.add('hidden');
+                clearValidationErrors('validationErrors');
                 
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Agregar Cliente';
             } catch (error) {
                 console.error('Error al agregar cliente:', error);
-                alert('Error al guardar el cliente. Por favor intente nuevamente.');
+                displayValidationErrors({ general: 'Error al guardar el cliente. Por favor intente nuevamente.' }, 'validationErrors');
                 
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Agregar Cliente';

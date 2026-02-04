@@ -60,6 +60,11 @@
                     <button id="addServiceBtn" class="py-2 px-4 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600">Agregar Servicio</button>
                     <button id="clearAllBtn" class="py-2 px-4 bg-red-100 text-red-700 rounded-lg hover:bg-red-200">Eliminar todos</button>
                 </div>
+
+                <!-- Contenedor para Errores de Validación -->
+                <div id="validationErrors" class="hidden mt-3" role="alert">
+                    <!-- Se pobla con errores de validación si las reglas fallan -->
+                </div>
             </div>
 
             <div class="mt-4 text-center">
@@ -70,6 +75,7 @@
 
     <script type="module">
         import { servicesAPI } from './firebase-config.js';
+        import { validateFields, displayValidationErrors, clearValidationErrors } from './validation-utils.js';
 
         // Default prices (same initial mapping as cobranza)
         const DEFAULT_PRICES = {
@@ -193,33 +199,41 @@
         // Add service
         addServiceBtn.addEventListener('click', async () => {
             const name = newServiceName.value.trim();
-            const price = Number(newServicePrice.value);
+            const priceStr = newServicePrice.value.trim();
             
-            if (!name) { 
-                alert('Ingresa un nombre de servicio.'); 
-                newServiceName.focus(); 
-                return; 
-            }
-            
-            if (isNaN(price) || price < 0) { 
-                alert('Ingresa un precio válido.'); 
-                newServicePrice.focus(); 
-                return; 
+            // Validar con validation-utils
+            const validationResult = validateFields({
+                nombre: { 
+                    value: name, 
+                    rules: [['required', 'Nombre del servicio'], ['stringLength', 2, 100, 'Nombre']] 
+                },
+                precio: { 
+                    value: priceStr, 
+                    rules: [['required', 'Precio'], ['positiveNumber', 'Precio']] 
+                }
+            });
+
+            if (!validationResult.valid) {
+                displayValidationErrors(validationResult.errors, 'validationErrors');
+                return;
             }
 
+            const price = parseFloat(priceStr);
             const exists = currentServices.find(s => s.name === name);
             if (exists) {
                 if (!confirm('El servicio ya existe. ¿Deseas sobrescribir su precio?')) return;
             }
 
             try {
+                clearValidationErrors('validationErrors');
                 await servicesAPI.save(name, price);
                 newServiceName.value = '';
                 newServicePrice.value = '';
+                console.log('✅ Servicio agregado correctamente:', name);
                 // No need to call renderPrices - real-time listener handles it
             } catch (error) {
                 console.error('Error agregando servicio:', error);
-                alert('Error al agregar el servicio.');
+                displayValidationErrors({ general: 'Error al agregar el servicio.' }, 'validationErrors');
             }
         });
 
