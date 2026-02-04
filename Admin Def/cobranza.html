@@ -403,6 +403,11 @@
                 </button>
             </div>
 
+            <!-- Contenedor para Errores de Validación -->
+            <div id="validationErrors" class="hidden mt-6" role="alert">
+                <!-- Se pobla con errores de validación si las reglas fallan -->
+            </div>
+
             <!-- Mensaje de Resultado para ERRORES (Se usa para validaciones) -->
             <div id="resultMessage" class="hidden mt-6 p-3 bg-red-100 border border-error-red text-center rounded-lg text-error-red font-medium" role="alert">
                 <!-- Se pobla con mensajes de error si la validación falla -->
@@ -420,6 +425,7 @@
     <script type="module">
     // Lógica de JavaScript para el Ticket de Pago y la Transacción
     import { servicesAPI, transactionsAPI, settingsAPI, clientsAPI } from './firebase-config.js';
+    import { validateFields, displayValidationErrors, clearValidationErrors } from './validation-utils.js';
         
     const totalAmountInput = document.getElementById('totalAmount');
         const chargeButton = document.getElementById('chargeButton');
@@ -725,9 +731,81 @@
             
             // Extraer el valor numérico del total (remove $ if present)
             const totalStr = totalAmountInput.value.replace('$', '').trim();
+            
+            // Limpiar errores anteriores
+            clearValidationErrors('validationErrors');
+
+            // Validaciones con módulo de validación
+            const validationResult = validateFields({
+                servicios: { 
+                    value: selectedServices.length, 
+                    rules: [['numberRange', 1, 999, 'Servicios']] 
+                },
+                operador: { 
+                    value: selectedOperator, 
+                    rules: [['required', 'Operador']] 
+                },
+                total: { 
+                    value: totalStr, 
+                    rules: [['positiveNumber', 'Monto total']] 
+                },
+                metodoPago: { 
+                    value: selectedPayment ? selectedPayment.value : '', 
+                    rules: [['required', 'Método de Pago']] 
+                }
+            });
+
+            if (!validationResult.valid) {
+                displayValidationErrors(validationResult.errors, 'validationErrors');
+                return;
+            }
+
             const total = parseFloat(totalStr);
-            const selectedPayment = document.querySelector('input[name="pago"]:checked');
-            const selectedServiceElements = document.querySelectorAll('input[name="servicio"]:checked');
+
+            // Validar que si se ingresó un DNI, el cliente existe
+            if (clientDNIValue && !selectedClient) {
+                const errors = { cliente: 'El DNI ingresado no coincide con ningún cliente. Verifica los datos.' };
+                displayValidationErrors(errors, 'validationErrors');
+                clientDNI.focus();
+                return;
+            }
+            
+            // Ocultar mensaje de error si las validaciones pasan
+            resultMessage.classList.add('hidden');
+
+            // Deshabilitar botón mientras se procesa
+            chargeButton.disabled = true;
+            chargeButton.textContent = 'Procesando...';
+
+            try {
+                // 2. Crear objeto de transacción con timestamp
+                const paymentType = selectedPayment.value;
+                const transactionId = generateTransactionId();
+                const transactionData = {
+                    id: Date.now(), // ID único basado en timestamp
+                    transactionId: transactionId,
+                    monto: total.toFixed(2),
+                    metodoPago: paymentType,
+                    servicios: selectedServices,
+                    operador: selectedOperator,
+                    clienteDNI: clientDNIValue || null, // DNI del cliente (puede ser null si no se ingresa)
+                    clienteName: selectedClient ? selectedClient.name : null, // Nombre del cliente
+                    fecha: new Date().toISOString() // Fecha completa en formato ISO
+                };
+
+                // 3. Guardar en Firestore
+                await addTransaction(transactionData);
+                
+                console.log("✅ Cobro Realizado y Guardado en Firestore con Validación");
+                console.log(`Monto: $${total.toFixed(2)} | Método: ${paymentType} | ID: ${transactionId} | Cliente: ${selectedClient ? selectedClient.name : 'N/A'}`);
+
+                // 4. Mostrar el Ticket de Pago
+                showPaymentTicket(total, paymentType, selectedServices, transactionId, selectedOperator, selectedClient ? selectedClient.name : null);
+
+                // Limpiar el formulario después del cobro exitoso
+                serviceForm.reset();
+                totalAmountInput.value = '';
+
             const selectedServices = Array.from(selectedServiceElements).map(cb => cb.value);
             const selectedOperator = operatorSelect ? operatorSelect.value : '';
             const clientDNIValue = clientDNI.value.trim(); // DNI ingresado

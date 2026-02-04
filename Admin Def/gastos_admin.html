@@ -277,6 +277,11 @@
                 </button>
             </form>
 
+            <!-- Contenedor para Errores de Validación -->
+            <div id="validationErrors" class="hidden mt-6" role="alert">
+                <!-- Se pobla con errores de validación si las reglas fallan -->
+            </div>
+
             <!-- Mensaje de Resultado para ERRORES (Se usa para validaciones) -->
             <div id="resultMessage" class="hidden mt-6 p-3 bg-red-100 border border-error-red text-center rounded-lg text-error-red font-medium" role="alert">
                 <!-- Se pobla con mensajes de error si la validación falla -->
@@ -294,6 +299,7 @@
     <script type="module">
         // --- FIREBASE IMPORTS ---
         import { expensesAPI } from './firebase-config.js';
+        import { validateFields, displayValidationErrors, clearValidationErrors, validateFile } from './validation-utils.js';
 
         // Lógica de JavaScript para la gestión de gastos
 
@@ -442,27 +448,43 @@
         expenseForm.addEventListener('submit', async (e) => {
             e.preventDefault(); // Evitar el envío de formulario tradicional
             
-            const amount = parseFloat(expenseAmountInput.value);
+            // Limpiar errores anteriores
+            clearValidationErrors('validationErrors');
+            
+            const amount = expenseAmountInput.value;
             const category = expenseCategorySelect.value;
             const details = otherExpenseDetailsInput.value.trim();
             const requiresDetail = categoriesRequiringDetail.includes(category);
 
-            // 1. Validaciones
-            if (isNaN(amount) || amount <= 0) {
-                showMessage('Por favor, ingrese un monto válido y positivo.', 'error');
-                expenseAmountInput.focus();
+            // 1. Validaciones con módulo de validación
+            const validationResult = validateFields({
+                monto: { 
+                    value: amount, 
+                    rules: [['positiveNumber', 'Monto']] 
+                },
+                categoria: { 
+                    value: category, 
+                    rules: [['required', 'Categoría']] 
+                },
+                detalle: { 
+                    value: details, 
+                    rules: requiresDetail ? [['required', 'Detalle']] : [] 
+                }
+            });
+
+            if (!validationResult.valid) {
+                displayValidationErrors(validationResult.errors, 'validationErrors');
                 return;
             }
 
-            if (!category) {
-                showMessage('Por favor, seleccione una categoría de gasto.', 'error');
-                return;
-            }
-
-            if (requiresDetail && details === '') {
-                showMessage('Debe especificar el gasto para la categoría seleccionada.', 'error');
-                otherExpenseDetailsInput.focus();
-                return;
+            // Validar archivo si existe
+            if (receiptFile) {
+                const fileValidation = validateFile(receiptFile, ['image/jpeg', 'image/png', 'image/gif'], 5);
+                if (!fileValidation.valid) {
+                    const errors = { comprobante: fileValidation.error };
+                    displayValidationErrors(errors, 'validationErrors');
+                    return;
+                }
             }
             
             // Ocultar mensaje de error si las validaciones pasan
@@ -470,7 +492,7 @@
 
             // 2. Crear objeto de gasto
             const expenseData = {
-                amount: amount.toFixed(2),
+                amount: parseFloat(amount).toFixed(2),
                 category: category,
                 detail: requiresDetail ? details : 'N/A', // Usar 'N/A' si no se requiere detalle
                 fecha: new Date().toISOString() // Fecha completa en formato ISO
@@ -485,9 +507,8 @@
 
                 await addExpense(expenseData, receiptFile);
                 
-                console.log("--- Gasto Registrado y Guardado en Firestore ---");
+                console.log("✅ Gasto Registrado y Guardado en Firestore con Validación");
                 console.log(expenseData);
-                console.log("------------------------");
 
                 // 4. Mostrar Modal de Éxito
                 showSuccessModal({
@@ -513,7 +534,7 @@
 
             } catch (error) {
                 console.error('Error al guardar gasto:', error);
-                showMessage('Error al guardar el gasto. Por favor intente nuevamente.', 'error');
+                displayValidationErrors({ general: 'Error al guardar el gasto. Por favor intente nuevamente.' }, 'validationErrors');
                 
                 // Rehabilitar botón en caso de error
                 const submitBtn = expenseForm.querySelector('button[type="submit"]');
