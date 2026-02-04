@@ -231,6 +231,7 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, signInWithEmailAndPassword, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, collection, setDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { hashPassword, validatePassword } from './crypto-utils.js';
 
         // Establecer el nivel de log para depuración
         setLogLevel('Debug');
@@ -370,8 +371,23 @@
                     return;
                 }
 
-                // 5. Comparar la contraseña (almacenada en texto plano en Firestore para este ejemplo)
-                if (userData.password !== password) {
+                // 5. Validar contraseña - Soporta tanto contraseñas hasheadas como texto plano (para compatibilidad)
+                let isPasswordValid = false;
+                
+                if (userData.passwordHashed) {
+                    // Contraseña hasheada - usar validación PBKDF2
+                    isPasswordValid = await validatePassword(password, userData.password);
+                } else {
+                    // Contraseña en texto plano (modo legacy) - comparación directa
+                    isPasswordValid = userData.password === password;
+                    
+                    // Si es texto plano, hashearla ahora para futuras autenticaciones
+                    if (isPasswordValid) {
+                        console.log("⚠️ Contraseña en texto plano detectada. Se hasheará en la próxima sesión.");
+                    }
+                }
+                
+                if (!isPasswordValid) {
                     showStatusModal(false, "Error de Acceso", "Contraseña incorrecta.");
                     return;
                 }
@@ -463,29 +479,37 @@
             const docSnap = await getDoc(usersRef);
 
             if (!docSnap.exists()) {
-                console.log("Creando usuarios por defecto y marcador de setup...");
+                console.log("Creando usuarios por defecto con contraseñas hasheadas...");
                 const userColRef = collection(db, `/artifacts/${appId}/users/${userId}/usuarios`);
 
-                // 1. Usuario Administrador 
-                await setDoc(doc(userColRef, "admin"), {
-                    username: 'admin',
-                    password: 'adminpassword', 
-                    role: 'admin',
-                    createdAt: new Date()
-                });
+                try {
+                    // 1. Usuario Administrador con contraseña hasheada
+                    const adminPasswordHash = await hashPassword('adminpassword');
+                    await setDoc(doc(userColRef, "admin"), {
+                        username: 'admin',
+                        password: adminPasswordHash, 
+                        role: 'admin',
+                        createdAt: new Date(),
+                        passwordHashed: true
+                    });
 
-                // 2. Usuario Empleado 
-                await setDoc(doc(userColRef, "barbero1"), {
-                    username: 'barbero1',
-                    password: 'barberopassword', 
-                    role: 'employee',
-                    createdAt: new Date()
-                });
-                
-                await setDoc(usersRef, { done: true, setupDate: new Date() });
-                console.log("Setup inicial completado. Usuarios creados.");
+                    // 2. Usuario Empleado con contraseña hasheada
+                    const employeePasswordHash = await hashPassword('barberopassword');
+                    await setDoc(doc(userColRef, "barbero1"), {
+                        username: 'barbero1',
+                        password: employeePasswordHash, 
+                        role: 'employee',
+                        createdAt: new Date(),
+                        passwordHashed: true
+                    });
+                    
+                    await setDoc(usersRef, { done: true, setupDate: new Date() });
+                    console.log("✅ Setup inicial completado. Usuarios creados con contraseñas encriptadas.");
+                } catch (error) {
+                    console.error("❌ Error durante setup de usuarios:", error);
+                }
             } else {
-                console.log("Usuarios por defecto ya existen. UID de base de datos:", userId);
+                console.log("✅ Usuarios por defecto ya existen. UID de base de datos:", userId);
             }
         }
 

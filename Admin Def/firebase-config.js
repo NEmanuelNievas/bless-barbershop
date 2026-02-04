@@ -7,6 +7,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+import { hashPassword, validatePassword, isPasswordHashed } from './crypto-utils.js';
 
 // --- Configuración de Firebase ---
 const firebaseConfig = {
@@ -379,5 +380,91 @@ export const settingsAPI = {
     }
 };
 
+// --- API de Usuarios (con Encriptación de Contraseñas) ---
+export const usersAPI = {
+    /**
+     * Crea un usuario con contraseña hasheada
+     * @param {string} username - Nombre de usuario
+     * @param {string} password - Contraseña (se hasheará automáticamente)
+     * @param {string} role - Rol (admin o employee)
+     * @param {string} userId - UID del usuario que realiza el setup
+     */
+    async createUser(username, password, role, userId) {
+        if (initializationFailed) {
+            return this._createLocalUser(username, password, role);
+        }
+
+        try {
+            // Hashear la contraseña antes de almacenar
+            const hashedPassword = await hashPassword(password);
+            
+            const userColRef = collection(db, `/artifacts/${appId}/users/${userId}/usuarios`);
+            await setDoc(doc(userColRef, username), {
+                username: username,
+                password: hashedPassword,
+                role: role,
+                createdAt: new Date(),
+                passwordHashed: true // Flag para indicar que está hasheada
+            });
+
+            console.log(`✅ Usuario ${username} creado con contraseña hasheada`);
+        } catch (error) {
+            console.error(`❌ Error al crear usuario ${username}:`, error);
+            throw error;
+        }
+    },
+
+    /**
+     * Autentica un usuario validando contraseña hasheada
+     * @param {string} username - Nombre de usuario
+     * @param {string} password - Contraseña ingresada
+     * @param {string} userId - UID del usuario que realiza la consulta
+     * @returns {Promise<Object|null>} Datos del usuario si es válido, null en caso contrario
+     */
+    async authenticateUser(username, password, userId) {
+        if (initializationFailed) {
+            return this._authenticateLocalUser(username, password);
+        }
+
+        try {
+            const userColRef = collection(db, `/artifacts/${appId}/users/${userId}/usuarios`);
+            const q = query(userColRef, where("username", "==", username));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                return null;
+            }
+
+            const userDoc = querySnapshot.docs[0];
+            const userData = userDoc.data();
+
+            // Validar contraseña
+            const isValid = await validatePassword(password, userData.password);
+            
+            if (isValid) {
+                return userData; // Retornar datos del usuario sin la contraseña hasheada
+            }
+            
+            return null;
+        } catch (error) {
+            console.error(`❌ Error al autenticar usuario ${username}:`, error);
+            return null;
+        }
+    },
+
+    // Fallbacks locales para modo sin Firebase
+    _createLocalUser(username, password, role) {
+        const users = JSON.parse(localStorage.getItem('usersData') || '[]');
+        users.push({ username, password, role, createdAt: new Date() });
+        localStorage.setItem('usersData', JSON.stringify(users));
+    },
+
+    _authenticateLocalUser(username, password) {
+        const users = JSON.parse(localStorage.getItem('usersData') || '[]');
+        const user = users.find(u => u.username === username && u.password === password);
+        return user || null;
+    }
+};
+
 // --- Exportar instancias ---
-export { app, db, auth, storage, initializationFailed };
+export { app, db, auth, storage, initializationFailed, hashPassword, validatePassword, isPasswordHashed };
