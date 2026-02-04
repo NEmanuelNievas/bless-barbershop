@@ -234,24 +234,9 @@ const firebaseConfig = {
 firebase deploy
 ```
 
-6️⃣ **Acceder a la aplicación**
-```
-https://tu-proyecto.web.app
-```
-
 ---
 
-## 🔐 Credenciales de Acceso
 
-### Administrador
-- **Usuario:** `admin`
-- **Contraseña:** `adminpassword`
-- **Permisos:** Acceso total al sistema
-
-### Barbero/Empleado
-- **Usuario:** `barbero1`
-- **Contraseña:** `barberopassword`
-- **Permisos:** Funciones operativas básicas
 
 > ⚠️ **Nota de Seguridad:** Cambiar estas credenciales en producción mediante Firebase Authentication.
 
