@@ -376,10 +376,9 @@
                     return;
                 }
 
-                // 6. Si el usuario, rol y contraseña coinciden, autenticamos con el email ficticio
-                // Esto es solo para que el sistema de autenticación de Firebase se "active"
-                const userEmail = `${username}@blessbarbershop.com`;
-                await signInWithEmailAndPassword(auth, userEmail, password); // NOTA: Aquí Firebase Auth valida contra sus propias reglas, pero la validación real la hicimos en el paso 5.
+                // 6. La validación se completó contra Firestore en el paso 5
+                // El usuario ya está autenticado de forma anónima con un UID válido
+                // Ahora redirigimos según el rol
                 
                 // 7. Redirigir según el rol
                 if (role === 'admin') {
