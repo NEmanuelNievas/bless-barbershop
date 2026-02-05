@@ -1,4 +1,4 @@
-# ✂️ Bless Barbershop - Sistema de Gestión Integral
+# ✂️ Bless Barbershop - Sistema de Gestión Integral v3.0
 
 > **Sistema completo de gestión para barberías desarrollado con JavaScript vanilla, Firebase y diseño moderno con Tailwind CSS.**
 
@@ -16,9 +16,8 @@
 ### 🎯 Características Destacadas
 
 ✨ **Sistema de Comisiones Inteligente**  
-Implementación de **lógica avanzada en JavaScript puro** para calcular comisiones variables por barbero basadas en:
+Implementación de **lógica avanzada en JavaScript puro** para calcular comisiones variables por barbero con:
 - Porcentaje configurable dinámicamente
-- Montos de servicios personalizados
 - Múltiples servicios por transacción
 - Generación automática de reportes de rendimiento
 
@@ -29,7 +28,7 @@ Implementación de **lógica avanzada en JavaScript puro** para calcular comisio
 - **Firebase Hosting** para deployment instantáneo
 
 🎨 **Diseño Moderno y Responsivo**
-- UI construida con **Tailwind CSS**
+- UI construida con **Tailwind CSS v3**
 - Interfaz adaptable a móviles, tablets y escritorio
 - Sistema de colores profesional con azul corporativo
 - Iconografía SVG personalizada
@@ -42,12 +41,111 @@ Implementación de **lógica avanzada en JavaScript puro** para calcular comisio
 
 | Módulo | Descripción |
 |--------|-------------|
-| **💰 Cobranza** | Registro de cortes y servicios con generación automática de tickets de pago, cálculo de totales y persistencia en Firestore |
-| **📊 Rendimiento** | Dashboard con métricas en tiempo real: comisiones ganadas por barbero, cantidad de cortes, gastos e ingresos por ventas adicionales |
-| **💵 Gestión de Gastos** | Control de gastos con categorías, comprobantes fotográficos en Firebase Storage y validación de tamaños (máx. 5MB) |
-| **👥 Base de Clientes** | CRUD completo de clientes con fotos de perfil, historial de servicios y sincronización en tiempo real |
-| **✂️ Edición de Precios** | Administración dinámica de servicios y precios con actualización instantánea en toda la aplicación |
-| **📅 Turnos** | Sistema de gestión de citas y horarios de barberos |
+| **💰 Cobranza** | Registro de servicios con generación automática de tickets de pago |
+| **📊 Rendimiento** | Dashboard con métricas: comisiones ganadas, cantidad de cortes, gastos e ingresos |
+| **💵 Gestión de Gastos** | Control de gastos con categorías y comprobantes |
+| **👥 Base de Clientes** | CRUD de clientes con historial de servicios |
+| **✂️ Edición de Precios** | Administración dinámica de servicios y precios |
+| **📅 Turnos** | Sistema de gestión de citas y horarios |
+| **📊 Reportes Avanzados** | Análisis detallados con múltiples filtros y exportación |
+| **🔍 Búsqueda Avanzada** | Búsqueda full-text indexada en toda la base de datos |
+
+### 🧑‍🔧 Panel de Empleado
+
+- Acceso limitado a funciones operativas
+- Registro de servicios y cobranza
+- Consulta de clientes
+- Visualización de rendimiento personal
+
+---
+
+## 🛠️ Stack Tecnológico
+
+### Frontend
+- **HTML5** - Estructura semántica
+- **CSS3 / Tailwind CSS** - Diseño responsive y moderno
+- **JavaScript ES6+** - Lógica de negocio con módulos nativos
+
+### Backend & Base de Datos
+- **Firebase Authentication** - Autenticación segura
+- **Firestore** - Base de datos NoSQL en tiempo real
+- **Firebase Storage** - Almacenamiento de archivos
+- **Firebase Hosting** - Hosting con HTTPS automático
+
+---
+
+## 📦 Estructura del Proyecto
+
+```
+Bless-Barbershop/
+├── Admin Def/              # Panel de administrador
+│   ├── index_admin.html
+│   ├── cobranza.html
+│   ├── rendimiento.html
+│   ├── search-advanced.html
+│   ├── reports-advanced.html
+│   └── [otros módulos...]
+├── Barberos/               # Panel de empleados
+│   ├── index_employee.html
+│   ├── [módulos limitados...]
+├── firestore.rules         # Reglas de seguridad Firestore
+├── storage.rules           # Reglas de seguridad Storage
+└── firebase.json           # Configuración Firebase (git-ignored)
+```
+
+---
+
+## 🔒 Seguridad
+
+⚠️ **Archivos sensibles ignorados en Git:**
+- `firebase-config.js` - Configuración de Firebase (local)
+- `CREDENCIALES.md` - Credenciales de acceso (local)
+- `.firebaserc` - Configuración de proyecto (local)
+- `firebase.json` - Configuración de deployment (local)
+
+Estos archivos no están presentes en el repositorio público.
+
+---
+
+## 📝 Configuración Local
+
+Para configurar el proyecto localmente:
+
+1. **Instalar dependencias** (si aplica)
+   ```bash
+   npm install -g firebase-tools
+   ```
+
+2. **Configurar Firebase** (contactar al propietario del proyecto)
+   ```bash
+   firebase login
+   firebase init
+   ```
+
+3. **Servir localmente**
+   ```bash
+   firebase serve
+   ```
+
+---
+
+## 🌐 Deployment
+
+El proyecto está configurado para deploy automático en Firebase Hosting.
+
+**URL de Producción:** https://barberia-bless.web.app
+
+---
+
+## 📄 Licencia
+
+Proyecto privado desarrollado para Bless Barbershop.
+
+---
+
+## 👨‍💻 Autor
+
+Desarrollado con ❤️ para la optimización de operaciones barbershop.
 | **👨‍👨‍👦 Control de Usuarios** | Administración de permisos y roles (Admin/Empleado) |
 
 ### 🧑‍🔧 Panel de Empleado
