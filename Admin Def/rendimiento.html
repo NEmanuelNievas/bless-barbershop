@@ -358,6 +358,46 @@
             }
         }
 
+        // Función auxiliar para filtrar transacciones del mes actual
+        function filterTransactionsByCurrentMonth(transactions) {
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth(); // 0-indexed (0 = enero, 11 = diciembre)
+            const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+            
+            return transactions.filter(transaction => {
+                let transactionDate;
+                
+                // Intentar parsear fecha en formato ISO (2024-12-15) o timestamp
+                if (transaction.fecha) {
+                    if (typeof transaction.fecha === 'string') {
+                        // Formato ISO: 2024-12-15
+                        transactionDate = new Date(transaction.fecha);
+                    } else if (transaction.fecha.toDate) {
+                        // Firebase Timestamp
+                        transactionDate = transaction.fecha.toDate();
+                    } else {
+                        // Intenta como número (milisegundos)
+                        transactionDate = new Date(transaction.fecha);
+                    }
+                } else if (transaction.timestamp) {
+                    // Alternativa: usar timestamp
+                    transactionDate = new Date(transaction.timestamp);
+                } else {
+                    // Si no hay fecha, excluir
+                    return false;
+                }
+                
+                // Validar que la fecha sea válida
+                if (isNaN(transactionDate.getTime())) {
+                    return false;
+                }
+                
+                // Filtrar: la transacción debe estar entre el 1 del mes actual y hoy
+                return transactionDate >= firstDayOfMonth && transactionDate <= today;
+            });
+        }
+
         // render function for rendimiento panel
         async function computeRendimiento() {
             // Mostrar estado de carga
@@ -367,7 +407,10 @@
             document.getElementById('totalExpenses').textContent = '...';
             
             // Cargar transacciones reales desde Firestore
-            const transactions = await loadTransactions();
+            let transactions = await loadTransactions();
+            
+            // Filtrar transacciones del mes actual (acumulativo desde el 1 del mes hasta hoy)
+            transactions = filterTransactionsByCurrentMonth(transactions);
             const totalCuts = transactions.length;
             
             // Calcular ingresos totales por cortes
