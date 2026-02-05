@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes Avanzados - Bless Barbershop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles_shared.css">
+    <link rel="stylesheet" href="enhanced-styles.css">
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF para exportar a PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- jsPDF autoTable -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { 'primary-blue': '#2563EB', 'primary-blue-dark': '#1D4ED8' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .app-container { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem; }
+        .report-card { background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); padding: 2rem; margin: 1rem 0; }
+        .chart-container { position: relative; height: 400px; margin: 2rem 0; }
+        .table-container { overflow-x: auto; margin: 2rem 0; }
+        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px; margin: 1rem 0; }
+        .filter-section { background: #f3f4f6; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; }
+        .tab { padding: 0.75rem 1.5rem; cursor: pointer; border: none; background: transparent; font-weight: 600; color: #6b7280; transition: all 0.3s; }
+        .tab.active { color: #2563eb; border-bottom: 3px solid #2563eb; }
+        .hidden-content { display: none; }
+        .hidden-content.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="w-full max-w-6xl">
+            <div class="text-center mb-8 fade-in-up">
+                <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">REPORTES AVANZADOS</h1>
+                <p class="text-white text-opacity-80">Análisis detallado y estadísticas del negocio</p>
+            </div>
+
+            <!-- Botón volver -->
+            <div class="mb-6">
+                <a href="index_admin.html" class="bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition">
+                    ← Volver al Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Tabs de navegación -->
+        <div class="w-full max-w-6xl bg-white rounded-t-lg shadow-lg">
+            <div class="flex flex-wrap border-b border-gray-200 px-4">
+                <button class="tab active" onclick="switchTab('ingresos')">📊 Ingresos</button>
+                <button class="tab" onclick="switchTab('gastos')">💰 Gastos</button>
+                <button class="tab" onclick="switchTab('rendimiento')">🎯 Rendimiento</button>
+                <button class="tab" onclick="switchTab('clientes')">👥 Clientes</button>
+                <button class="tab" onclick="switchTab('comparativo')">📈 Comparativo</button>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: INGRESOS -->
+        <div id="ingresos" class="w-full max-w-6xl report-card hidden-content active fade-in-up">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">Reporte de Ingresos</h2>
+            
+            <!-- Filtros -->
+            <div class="filter-section">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha Inicio</label>
+                        <input type="date" id="ingreso_start" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha Fin</label>
+                        <input type="date" id="ingreso_end" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Empleado (Opcional)</label>
+                        <select id="ingreso_empleado" class="w-full border-2 border-gray-300 rounded px-3 py-2">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="generateIngresoReport()" class="bg-blue-600 text-white px-6 py-2 rounded font-semibold hover:bg-blue-700 transition flex-1">
+                            Generar Reporte
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen -->
+            <div id="ingreso_summary" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"></div>
+
+            <!-- Gráfico -->
+            <div class="chart-container">
+                <canvas id="ingresoChart"></canvas>
+            </div>
+
+            <!-- Tabla -->
+            <div class="table-container" id="ingreso_table"></div>
+
+            <!-- Botones de exportación -->
+            <div class="flex gap-2 mt-6">
+                <button onclick="exportIngresoCSV()" class="bg-green-600 text-white px-4 py-2 rounded font-semibold hover:bg-green-700 transition">
+                    📥 Descargar CSV
+                </button>
+                <button onclick="exportIngresoPDF()" class="bg-red-600 text-white px-4 py-2 rounded font-semibold hover:bg-red-700 transition">
+                    📄 Descargar PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: GASTOS -->
+        <div id="gastos" class="w-full max-w-6xl report-card hidden-content fade-in-up">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">Reporte de Gastos</h2>
+            
+            <!-- Filtros -->
+            <div class="filter-section">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha Inicio</label>
+                        <input type="date" id="gasto_start" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha Fin</label>
+                        <input type="date" id="gasto_end" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Categoría (Opcional)</label>
+                        <select id="gasto_categoria" class="w-full border-2 border-gray-300 rounded px-3 py-2">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="generateGastosReport()" class="bg-blue-600 text-white px-6 py-2 rounded font-semibold hover:bg-blue-700 transition flex-1">
+                            Generar Reporte
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen -->
+            <div id="gasto_summary" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"></div>
+
+            <!-- Gráfico -->
+            <div class="chart-container">
+                <canvas id="gastosChart"></canvas>
+            </div>
+
+            <!-- Tabla -->
+            <div class="table-container" id="gasto_table"></div>
+
+            <!-- Botones de exportación -->
+            <div class="flex gap-2 mt-6">
+                <button onclick="exportGastosCSV()" class="bg-green-600 text-white px-4 py-2 rounded font-semibold hover:bg-green-700 transition">
+                    📥 Descargar CSV
+                </button>
+                <button onclick="exportGastosPDF()" class="bg-red-600 text-white px-4 py-2 rounded font-semibold hover:bg-red-700 transition">
+                    📄 Descargar PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: RENDIMIENTO -->
+        <div id="rendimiento" class="w-full max-w-6xl report-card hidden-content fade-in-up">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">Reporte de Rendimiento</h2>
+            
+            <!-- Filtros -->
+            <div class="filter-section">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha Inicio</label>
+                        <input type="date" id="rend_start" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha Fin</label>
+                        <input type="date" id="rend_end" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="generateRendimientoReport()" class="bg-blue-600 text-white px-6 py-2 rounded font-semibold hover:bg-blue-700 transition flex-1">
+                            Generar Reporte
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen general -->
+            <div id="rend_summary" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"></div>
+
+            <!-- Tabla de empleados -->
+            <div class="table-container" id="rend_table"></div>
+
+            <!-- Botones de exportación -->
+            <div class="flex gap-2 mt-6">
+                <button onclick="exportRendimientoCSV()" class="bg-green-600 text-white px-4 py-2 rounded font-semibold hover:bg-green-700 transition">
+                    📥 Descargar CSV
+                </button>
+                <button onclick="exportRendimientoPDF()" class="bg-red-600 text-white px-4 py-2 rounded font-semibold hover:bg-red-700 transition">
+                    📄 Descargar PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: CLIENTES -->
+        <div id="clientes" class="w-full max-w-6xl report-card hidden-content fade-in-up">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">Reporte de Clientes</h2>
+            
+            <!-- Filtros -->
+            <div class="filter-section">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha Inicio</label>
+                        <input type="date" id="cliente_start" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha Fin</label>
+                        <input type="date" id="cliente_end" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Ordenar por</label>
+                        <select id="cliente_orden" class="w-full border-2 border-gray-300 rounded px-3 py-2">
+                            <option value="frecuencia">Frecuencia</option>
+                            <option value="gasto">Gasto Total</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="generateClientesReport()" class="bg-blue-600 text-white px-6 py-2 rounded font-semibold hover:bg-blue-700 transition flex-1">
+                            Generar Reporte
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen -->
+            <div id="cliente_summary" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"></div>
+
+            <!-- Tabla -->
+            <div class="table-container" id="cliente_table"></div>
+
+            <!-- Botones de exportación -->
+            <div class="flex gap-2 mt-6">
+                <button onclick="exportClientesCSV()" class="bg-green-600 text-white px-4 py-2 rounded font-semibold hover:bg-green-700 transition">
+                    📥 Descargar CSV
+                </button>
+                <button onclick="exportClientesPDF()" class="bg-red-600 text-white px-4 py-2 rounded font-semibold hover:bg-red-700 transition">
+                    📄 Descargar PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: COMPARATIVO -->
+        <div id="comparativo" class="w-full max-w-6xl report-card hidden-content fade-in-up">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">Comparativo de Períodos</h2>
+            
+            <!-- Filtros -->
+            <div class="filter-section">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <h3 class="font-semibold text-gray-900 mb-3">Período 1</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Inicio</label>
+                                <input type="date" id="comp_start1" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Fin</label>
+                                <input type="date" id="comp_end1" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 mb-3">Período 2</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Inicio</label>
+                                <input type="date" id="comp_start2" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Fin</label>
+                                <input type="date" id="comp_end2" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="generateComparativoReport()" class="bg-blue-600 text-white px-6 py-2 rounded font-semibold hover:bg-blue-700 transition w-full md:w-auto">
+                    Comparar Períodos
+                </button>
+            </div>
+
+            <!-- Resultados -->
+            <div id="comp_results" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        </div>
+    </div>
+
+    <!-- Firebase scripts -->
+    <script src="firebase-config.js"></script>
+    <script src="crypto-utils.js"></script>
+    <script src="validation-utils.js"></script>
+    <script src="toast-notifications.js"></script>
+    <script src="reports-utils.js"></script>
+
+    <script>
+        let ingresoChart, gastosChart;
+        let currentReportes = {};
+
+        // Setear fechas por defecto
+        window.addEventListener('load', async () => {
+            const hoy = new Date().toISOString().split('T')[0];
+            const hace30Dias = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+            // Ingresos
+            document.getElementById('ingreso_start').value = hace30Dias;
+            document.getElementById('ingreso_end').value = hoy;
+
+            // Gastos
+            document.getElementById('gasto_start').value = hace30Dias;
+            document.getElementById('gasto_end').value = hoy;
+
+            // Rendimiento
+            document.getElementById('rend_start').value = hace30Dias;
+            document.getElementById('rend_end').value = hoy;
+
+            // Clientes
+            document.getElementById('cliente_start').value = hace30Dias;
+            document.getElementById('cliente_end').value = hoy;
+
+            // Comparativo
+            document.getElementById('comp_start1').value = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            document.getElementById('comp_end1').value = hace30Dias;
+            document.getElementById('comp_start2').value = hace30Dias;
+            document.getElementById('comp_end2').value = hoy;
+
+            // Cargar datos
+            const loaded = await reportsManager.loadData();
+            if (loaded) {
+                // Llenar selectores
+                const empleados = reportsManager.getEmpleados();
+                const empleadoSelect = document.getElementById('ingreso_empleado');
+                empleados.forEach(emp => {
+                    const option = document.createElement('option');
+                    option.value = emp;
+                    option.textContent = emp;
+                    empleadoSelect.appendChild(option);
+                });
+
+                const categorias = reportsManager.getCategorias();
+                const categoriaSelect = document.getElementById('gasto_categoria');
+                categorias.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    categoriaSelect.appendChild(option);
+                });
+
+                showSuccess('Datos cargados correctamente');
+            } else {
+                showError('Error al cargar datos para reportes');
+            }
+        });
+
+        // Cambiar tabs
+        function switchTab(tab) {
+            // Ocultar todos
+            document.querySelectorAll('.hidden-content').forEach(el => el.classList.remove('active'));
+            // Quitar active de tabs
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            
+            // Mostrar seleccionado
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // INGRESOS
+        async function generateIngresoReport() {
+            const start = document.getElementById('ingreso_start').value;
+            const end = document.getElementById('ingreso_end').value;
+            const empleado = document.getElementById('ingreso_empleado').value || null;
+
+            if (!start || !end) {
+                showWarning('Por favor, selecciona fechas');
+                return;
+            }
+
+            const reporte = reportsManager.generateIngresoReport(start, end, empleado);
+            currentReportes.ingreso = reporte;
+
+            // Resumen
+            let summaryHTML = `
+                <div class="stat-card">
+                    <div class="text-sm opacity-80">Total Ingresos</div>
+                    <div class="text-3xl font-bold">$${reporte.totalIngresos}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-sm opacity-80">Cantidad de Cortes</div>
+                    <div class="text-3xl font-bold">${reporte.cantidadCortes}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-sm opacity-80">Promedio por Corte</div>
+                    <div class="text-3xl font-bold">$${reporte.promedioCorte}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-sm opacity-80">Período</div>
+                    <div class="text-sm font-semibold">${reporte.periodo}</div>
+                </div>
+            `;
+            document.getElementById('ingreso_summary').innerHTML = summaryHTML;
+
+            // Gráfico
+            const chartData = reportsManager.prepareChartData(reporte, 'empleados');
+            if (ingresoChart) ingresoChart.destroy();
+            ingresoChart = new Chart(document.getElementById('ingresoChart'), {
+                type: 'bar',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // Tabla
+            let tableHTML = '<table class="w-full border-collapse border border-gray-300"><thead><tr class="bg-gray-200"><th class="border p-2">Empleado</th><th class="border p-2">Cantidad</th><th class="border p-2">Total</th><th class="border p-2">Promedio</th></tr></thead><tbody>';
+            reporte.porEmpleado.forEach(emp => {
+                tableHTML += `<tr><td class="border p-2">${emp.empleado}</td><td class="border p-2">${emp.cantidadCortes}</td><td class="border p-2">$${emp.totalGenerado}</td><td class="border p-2">$${emp.promedio}</td></tr>`;
+            });
+            tableHTML += '</tbody></table>';
+            document.getElementById('ingreso_table').innerHTML = tableHTML;
+
+            showSuccess('Reporte de Ingresos generado');
+        }
+
+        function exportIngresoCSV() {
+            if (!currentReportes.ingreso) {
+                showWarning('Genera un reporte primero');
+                return;
+            }
+            reportsManager.exportToCSV(currentReportes.ingreso, 'reporte_ingresos.csv');
+        }
+
+        function exportIngresoPDF() {
+            if (!currentReportes.ingreso) {
+                showWarning('Genera un reporte primero');
+                return;
+            }
+            reportsManager.exportToPDF(currentReportes.ingreso, 'reporte_ingresos.pdf');
+        }
+
+        // GASTOS
+        async function generateGastosReport() {
+            const start = document.getElementById('gasto_start').value;
+            const end = document.getElementById('gasto_end').value;
+            const categoria = document.getElementById('gasto_categoria').value || null;
+
+            if (!start || !end) {
+                showWarning('Por favor, selecciona fechas');
+                return;
+            }
+
+            const reporte = reportsManager.generateGastosReport(start, end, categoria);
+            currentReportes.gastos = reporte;
+
+            // Resumen
+            let summaryHTML = `
+                <div class="stat-card">
+                    <div class="text-sm opacity-80">Total Gastos</div>
+                    <div class="text-3xl font-bold">$${reporte.totalGastos}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-sm opacity-80">Cantidad de Gastos</div>
+                    <div class="text-3xl font-bold">${reporte.cantidadGastos}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-sm opacity-80">Promedio por Gasto</div>
+                    <div class="text-3xl font-bold">$${reporte.promedioGasto}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-sm opacity-80">Período</div>
+                    <div class="text-sm font-semibold">${reporte.periodo}</div>
+                </div>
+            `;
+            document.getElementById('gasto_summary').innerHTML = summaryHTML;
+
+            // Gráfico
+            const chartData = reportsManager.prepareChartData(reporte, 'gastos');
+            if (gastosChart) gastosChart.destroy();
+            gastosChart = new Chart(document.getElementById('gastosChart'), {
+                type: 'pie',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+
+            // Tabla
+            let tableHTML = '<table class="w-full border-collapse border border-gray-300"><thead><tr class="bg-gray-200"><th class="border p-2">Categoría</th><th class="border p-2">Cantidad</th><th class="border p-2">Total</th><th class="border p-2">%</th></tr></thead><tbody>';
+            reporte.porCategoria.forEach(cat => {
+                tableHTML += `<tr><td class="border p-2">${cat.categoria}</td><td class="border p-2">${cat.cantidad}</td><td class="border p-2">$${cat.total}</td><td class="border p-2">${cat.porcentaje}%</td></tr>`;
+            });
+            tableHTML += '</tbody></table>';
+            document.getElementById('gasto_table').innerHTML = tableHTML;
+
+            showSuccess('Reporte de Gastos generado');
+        }
+
+        function exportGastosCSV() {
+            if (!currentReportes.gastos) {
+                showWarning('Genera un reporte primero');
+                return;
+            }
+            reportsManager.exportToCSV(currentReportes.gastos, 'reporte_gastos.csv');
+        }
+
+        function exportGastosPDF() {
+            if (!currentReportes.gastos) {
+                showWarning('Genera un reporte primero');
+                return;
+            }
+            reportsManager.exportToPDF(currentReportes.gastos, 'reporte_gastos.pdf');
+        }
+
+        // RENDIMIENTO
+        async function generateRendimientoReport() {
+            const start = document.getElementById('rend_start').value;
+            const end = document.getElementById('rend_end').value;
+
+            if (!start || !end) {
+                showWarning('Por favor, selecciona fechas');
+                return;
+            }
+
+            const reporte = reportsManager.generateRendimientoReport(start, end);
+            currentReportes.rendimiento = reporte;
+
+            const resumen = reporte.resumenGeneral;
+            let summaryHTML = `
+                <div class="stat-card">
+                    <div class="text-sm opacity-80">Total Ingresos</div>
+                    <div class="text-3xl font-bold">$${resumen.totalIngresos}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-sm opacity-80">Total Gastos</div>
+                    <div class="text-3xl font-bold">$${resumen.totalGastos}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-sm opacity-80">Utilidad Neta</div>
+                    <div class="text-3xl font-bold">$${resumen.utilidadNeta}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-sm opacity-80">Margen Neto</div>
+                    <div class="text-3xl font-bold">${resumen.margenNeto}%</div>
+                </div>
+            `;
+            document.getElementById('rend_summary').innerHTML = summaryHTML;
+
+            // Tabla
+            let tableHTML = '<table class="w-full border-collapse border border-gray-300"><thead><tr class="bg-gray-200"><th class="border p-2">Empleado</th><th class="border p-2">Ingresos</th><th class="border p-2">Cortes</th><th class="border p-2">Promedio</th><th class="border p-2">Gastos</th><th class="border p-2">Utilidad</th><th class="border p-2">Margen %</th></tr></thead><tbody>';
+            reporte.empleados.forEach(emp => {
+                tableHTML += `<tr><td class="border p-2">${emp.empleado}</td><td class="border p-2">$${emp.totalIngresos}</td><td class="border p-2">${emp.cantidadCortes}</td><td class="border p-2">$${emp.promedioCorte}</td><td class="border p-2">$${emp.gastosAsignados}</td><td class="border p-2">$${emp.utilidadNeta}</td><td class="border p-2">${emp.margenNeto}%</td></tr>`;
+            });
+            tableHTML += '</tbody></table>';
+            document.getElementById('rend_table').innerHTML = tableHTML;
+
+            showSuccess('Reporte de Rendimiento generado');
+        }
+
+        function exportRendimientoCSV() {
+            if (!currentReportes.rendimiento) {
+                showWarning('Genera un reporte primero');
+                return;
+            }
+            const reporteExport = {
+                ...currentReportes.rendimiento,
+                detalles: currentReportes.rendimiento.empleados
+            };
+            reportsManager.exportToCSV(reporteExport, 'reporte_rendimiento.csv');
+        }
+
+        function exportRendimientoPDF() {
+            if (!currentReportes.rendimiento) {
+                showWarning('Genera un reporte primero');
+                return;
+            }
+            reportsManager.exportToPDF(currentReportes.rendimiento, 'reporte_rendimiento.pdf');
+        }
+
+        // CLIENTES
+        async function generateClientesReport() {
+            const start = document.getElementById('cliente_start').value;
+            const end = document.getElementById('cliente_end').value;
+            const orden = document.getElementById('cliente_orden').value;
+
+            if (!start || !end) {
+                showWarning('Por favor, selecciona fechas');
+                return;
+            }
+
+            const reporte = reportsManager.generateClientesReport(start, end, orden);
+            currentReportes.clientes = reporte;
+
+            // Resumen
+            let summaryHTML = `
+                <div class="stat-card">
+                    <div class="text-sm opacity-80">Total Clientes</div>
+                    <div class="text-3xl font-bold">${reporte.cantidadClientes}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-sm opacity-80">Gasto Total</div>
+                    <div class="text-3xl font-bold">$${reporte.gastoTotalClientes}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-sm opacity-80">Gasto Promedio</div>
+                    <div class="text-3xl font-bold">$${(reporte.gastoTotalClientes / reporte.cantidadClientes).toFixed(2)}</div>
+                </div>
+            `;
+            document.getElementById('cliente_summary').innerHTML = summaryHTML;
+
+            // Tabla
+            let tableHTML = '<table class="w-full border-collapse border border-gray-300"><thead><tr class="bg-gray-200"><th class="border p-2">Cliente</th><th class="border p-2">Visitas</th><th class="border p-2">Total Gastado</th><th class="border p-2">Promedio</th><th class="border p-2">Última Visita</th><th class="border p-2">Servicios</th></tr></thead><tbody>';
+            reporte.clientes.forEach(cli => {
+                tableHTML += `<tr><td class="border p-2">${cli.cliente}</td><td class="border p-2">${cli.frecuencia}</td><td class="border p-2">$${cli.totalGastado}</td><td class="border p-2">$${cli.gasto_promedio}</td><td class="border p-2">${cli.ultimaVisita}</td><td class="border p-2">${cli.serviciosMasUsados}</td></tr>`;
+            });
+            tableHTML += '</tbody></table>';
+            document.getElementById('cliente_table').innerHTML = tableHTML;
+
+            showSuccess('Reporte de Clientes generado');
+        }
+
+        function exportClientesCSV() {
+            if (!currentReportes.clientes) {
+                showWarning('Genera un reporte primero');
+                return;
+            }
+            reportsManager.exportToCSV(currentReportes.clientes, 'reporte_clientes.csv');
+        }
+
+        function exportClientesPDF() {
+            if (!currentReportes.clientes) {
+                showWarning('Genera un reporte primero');
+                return;
+            }
+            reportsManager.exportToPDF(currentReportes.clientes, 'reporte_clientes.pdf');
+        }
+
+        // COMPARATIVO
+        async function generateComparativoReport() {
+            const start1 = document.getElementById('comp_start1').value;
+            const end1 = document.getElementById('comp_end1').value;
+            const start2 = document.getElementById('comp_start2').value;
+            const end2 = document.getElementById('comp_end2').value;
+
+            if (!start1 || !end1 || !start2 || !end2) {
+                showWarning('Por favor, completa todas las fechas');
+                return;
+            }
+
+            const reporte = reportsManager.generateComparativeReport(start1, end1, start2, end2);
+            const comp = reporte.comparativa;
+
+            let html = '';
+            html += `
+                <div class="bg-white rounded-lg p-6 border-l-4 border-blue-600">
+                    <h3 class="font-bold text-lg mb-4">${reporte.periodo1}</h3>
+                    <p class="text-2xl font-bold text-blue-600">$${comp.ingresos.periodo1}</p>
+                    <p class="text-gray-600 text-sm">Ingresos</p>
+                    <p class="text-2xl font-bold text-gray-700 mt-2">${comp.cortes.periodo1} cortes</p>
+                </div>
+            `;
+            html += `
+                <div class="bg-white rounded-lg p-6 border-l-4 border-purple-600">
+                    <h3 class="font-bold text-lg mb-4">${reporte.periodo2}</h3>
+                    <p class="text-2xl font-bold text-purple-600">$${comp.ingresos.periodo2}</p>
+                    <p class="text-gray-600 text-sm">Ingresos</p>
+                    <p class="text-2xl font-bold text-gray-700 mt-2">${comp.cortes.periodo2} cortes</p>
+                </div>
+            `;
+            
+            html += `
+                <div class="col-span-1 md:col-span-2 bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-6 border-2 border-green-600">
+                    <h3 class="font-bold text-lg mb-4">Variación de Ingresos</h3>
+                    <p class="text-3xl font-bold ${comp.ingresos.variacion > 0 ? 'text-green-600' : 'text-red-600'}">${comp.ingresos.variacion > 0 ? '+' : ''}${comp.ingresos.variacion}%</p>
+                    <p class="text-gray-600 text-sm">${comp.ingresos.variacionEstado}</p>
+                </div>
+            `;
+
+            html += `
+                <div class="col-span-1 md:col-span-2 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-6 border-2 border-blue-600">
+                    <h3 class="font-bold text-lg mb-4">Variación de Cortes</h3>
+                    <p class="text-3xl font-bold ${comp.cortes.variacion > 0 ? 'text-green-600' : 'text-red-600'}">${comp.cortes.variacion > 0 ? '+' : ''}${comp.cortes.variacion}%</p>
+                    <p class="text-gray-600 text-sm">${comp.cortes.variacionEstado}</p>
+                </div>
+            `;
+
+            document.getElementById('comp_results').innerHTML = html;
+            showSuccess('Comparativo generado');
+        }
+    </script>
+</body>
+</html>
