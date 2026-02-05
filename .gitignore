@@ -2,6 +2,8 @@
 .firebase/
 firebase-debug.log
 firestore-debug.log
+firebase-config.js
+.firebaserc
 
 # Node modules (si se usa Firebase CLI)
 node_modules/
@@ -20,5 +22,13 @@ Thumbs.db
 
 # Credenciales y archivos sensibles
 CREDENCIALES.md
+DEPLOYMENT_GUIDE.md
+DEPLOYMENT_COMPLETE.md
 *.key
 *.pem
+firebase.json
+
+# Información de proyectos sensible
+PROJECT_SUMMARY.md
+SEARCH_FEATURE_SUMMARY.md
+CHANGELOG_v2.0.md
