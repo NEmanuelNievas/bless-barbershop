@@ -453,6 +453,7 @@
         // --- Renderizar servicios dinámicamente desde Firestore ---
         const servicesContainer = document.getElementById('servicesContainer');
         const noServicesMessage = document.getElementById('noServicesMessage');
+        let servicesRendered = false;
 
         async function renderServices() {
             try {
@@ -462,6 +463,7 @@
                     // Si no hay servicios, mostrar mensaje y ocultar formulario
                     servicesContainer.innerHTML = '';
                     noServicesMessage.classList.remove('hidden');
+                    servicesRendered = false;
                     return;
                 }
                 
@@ -496,13 +498,8 @@
                     servicesContainer.appendChild(label);
                 });
                 
-                // Re-aplicar event listeners de cambio
-                serviceForm.addEventListener('change', async (e) => {
-                    if (e.target && e.target.name === 'servicio') {
-                        servicePrices = await loadServicePrices();
-                        updateCalculatedTotal();
-                    }
-                });
+                servicesRendered = true;
+                console.log('✅ Servicios renderizados:', services.length);
                 
             } catch (error) {
                 console.error('Error renderizando servicios:', error);
@@ -704,24 +701,32 @@
 
         // Inicializar: Cargar servicios y precios
         (async () => {
-            // Renderizar servicios dinámicamente
-            await renderServices();
-            
-            // Cargar precios
-            servicePrices = await loadServicePrices();
-            applyPricesToForm();
-            
-            // Setup real-time listener para servicios (re-renderizar si hay cambios)
-            servicesAPI.onServicesChange(async (services) => {
-                console.log('🔄 Servicios actualizados en tiempo real');
+            try {
+                console.log('Iniciando carga de servicios...');
+                
+                // 1. Renderizar servicios dinámicamente
                 await renderServices();
-                servicePrices = {};
-                services.forEach(s => {
-                    servicePrices[s.name] = s.price;
+                
+                // 2. Cargar precios
+                servicePrices = await loadServicePrices();
+                console.log('Precios cargados:', servicePrices);
+                
+                // 3. Setup real-time listener para servicios (re-renderizar si hay cambios)
+                servicesAPI.onServicesChange(async (services) => {
+                    console.log('🔄 Servicios actualizados en tiempo real, cantidad:', services.length);
+                    await renderServices();
+                    servicePrices = {};
+                    services.forEach(s => {
+                        servicePrices[s.name] = s.price;
+                    });
+                    console.log('Precios actualizados:', servicePrices);
+                    updateCalculatedTotal();
                 });
-                applyPricesToForm();
-                updateCalculatedTotal();
-            });
+                
+                console.log('✅ Inicialización completada');
+            } catch (error) {
+                console.error('❌ Error en inicialización:', error);
+            }
         })();
 
         // Función auxiliar para generar un ID de transacción simulado
