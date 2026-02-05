@@ -223,11 +223,11 @@ firebase functions:log --follow
 4. Agregar registro de actividad (audit log)
 
 ### Funcionalidades
-1. Sistema de turnos/citas
-2. Envío de recordatorios de cumpleaños por email
-3. Reportes avanzados con gráficos
-4. Integración con WhatsApp Business
-5. App móvil nativa (React Native / Flutter)
+1. ✅ Sistema de turnos/citas
+2. ✅ Reportes avanzados con gráficos
+3. ✅ Búsqueda avanzada con indexación de texto completo
+4. ⬜ Integración con WhatsApp Business
+5. ⬜ App móvil nativa (React Native / Flutter)
 
 ### Optimización
 1. Implementar cache de consultas frecuentes
