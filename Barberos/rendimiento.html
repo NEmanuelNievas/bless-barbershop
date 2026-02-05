@@ -261,6 +261,18 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="p-3 border rounded-lg bg-yellow-50">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-yellow-200 rounded-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-yellow-700" id="ownerTotal">$0.00</div>
+                            <div class="text-sm text-gray-700">Total ganado por propietario (Federico)</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Detail per barber (small list) -->
@@ -385,11 +397,22 @@
             }, 0);
             const suppliesRevenue = 0; // Sin datos de insumos por ahora
 
+            // Calcular ingresos del propietario (comisión de empleados + sus propios cortes)
+            const federicoRevenue = transactions.reduce((sum, t) => {
+                if (t.operador === 'Federico') {
+                    const amount = parseFloat(t.monto) || 0;
+                    return sum + amount;
+                }
+                return sum;
+            }, 0);
+            const ownerTotal = commissionEarned + federicoRevenue;
+
             document.getElementById('cutsCount').textContent = totalCuts;
             document.getElementById('commissionEarned').textContent = `$${commissionEarned.toFixed(2)}`;
             document.getElementById('expensesCount').textContent = expensesCount;
             document.getElementById('totalExpenses').textContent = `$${totalExpenses.toFixed(2)}`;
             document.getElementById('suppliesRevenue').textContent = `$${suppliesRevenue.toFixed(2)}`;
+            document.getElementById('ownerTotal').textContent = `$${ownerTotal.toFixed(2)}`;
 
             // Agrupar transacciones por operador
             const operatorStats = {};
