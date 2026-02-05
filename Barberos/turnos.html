@@ -185,9 +185,15 @@
          * Función principal que renderiza toda la página basada en el estado actual (turnosData).
          */
         function renderTurnosPage() {
+            console.log('Renderizando página de turnos, turnos actuales:', turnosData.length);
             const dynamicContent = document.getElementById('dynamicContent');
             const actionButtons = document.getElementById('actionButtons');
             const actionForms = document.getElementById('actionForms');
+            
+            if (!dynamicContent || !actionButtons || !actionForms) {
+                console.error('Error: No se encontraron los elementos del DOM');
+                return;
+            }
             
             // Ocultar todas las secciones de formularios
             actionForms.classList.add('hidden');
@@ -234,8 +240,12 @@
             }
             
             // Limpiar mensajes al cambiar de vista
-            document.getElementById('addTurnoMessage').classList.add('hidden');
-            document.getElementById('cancelTurnoMessage').classList.add('hidden');
+            const addMsg = document.getElementById('addTurnoMessage');
+            const cancelMsg = document.getElementById('cancelTurnoMessage');
+            if (addMsg) addMsg.classList.add('hidden');
+            if (cancelMsg) cancelMsg.classList.add('hidden');
+            
+            console.log('✅ Página de turnos renderizada');
         }
 
         /**
@@ -418,7 +428,13 @@
         window.showCancelForm = showCancelForm;
         
         // Inicializar la página cuando se cargan todos los módulos
-        renderTurnosPage();
+        try {
+            console.log('Iniciando turnos.html...');
+            renderTurnosPage();
+            console.log('✅ Turnos inicializado correctamente');
+        } catch (error) {
+            console.error('❌ Error inicializando turnos:', error);
+        }
 
     </script>
 </body>
