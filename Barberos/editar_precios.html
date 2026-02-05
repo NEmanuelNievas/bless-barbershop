@@ -215,16 +215,24 @@
 
             try {
                 clearValidationErrors('validationErrors');
+                addServiceBtn.disabled = true;
+                addServiceBtn.textContent = 'Agregando...';
+                
                 await servicesAPI.save(name, price);
                 newServiceName.value = '';
                 newServicePrice.value = '';
                 console.log('✅ Servicio agregado correctamente:', name);
-                showSuccess(`✅ Servicio agregado: ${name} - $${price}`, 3000);
+                showSuccess(`✅ Servicio agregado: ${name} - $${price.toFixed(2)}`, 3000);
                 // No need to call renderPrices - real-time listener handles it
             } catch (error) {
                 console.error('Error agregando servicio:', error);
-                showError('❌ Error al agregar el servicio.');
-                displayValidationErrors({ general: 'Error al agregar el servicio.' }, 'validationErrors');
+                console.error('Detalles del error:', error.message, error.code);
+                const errorMsg = error.message || 'Error desconocido';
+                showError(`❌ Error al agregar el servicio: ${errorMsg}`);
+                displayValidationErrors({ general: `Error al agregar el servicio: ${errorMsg}` }, 'validationErrors');
+            } finally {
+                addServiceBtn.disabled = false;
+                addServiceBtn.textContent = 'Agregar Servicio';
             }
         });
 
