@@ -411,6 +411,12 @@
             }, 5000);
         }
         
+        // --- EXPOSICIÓN DE FUNCIONES AL SCOPE GLOBAL ---
+        // Hacer las funciones accesibles desde handlers onclick en HTML
+        window.renderTurnosPage = renderTurnosPage;
+        window.showAddForm = showAddForm;
+        window.showCancelForm = showCancelForm;
+        
         // Inicializar la página cuando se cargan todos los módulos
         renderTurnosPage();
 
