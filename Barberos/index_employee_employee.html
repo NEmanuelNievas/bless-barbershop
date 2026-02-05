@@ -53,7 +53,7 @@
             
             <!-- Vínculo para volver a Home (opcional) -->
             <div class="mb-4">
-                <a href="login.html" class="text-sm text-gray-500 hover:text-blue-600 transition duration-150 ease-in-out">
+                <a href="login_employee.html" class="text-sm text-gray-500 hover:text-blue-600 transition duration-150 ease-in-out">
                     ← Volver al inicio
                 </a>
             </div>
@@ -84,7 +84,7 @@
                         <!-- Opción 1: Realizar pago (gastos_admin.html) -->
                         <li>
                             <a
-                                href="gastos_admin.html"
+                                href="gastos_admin_employee.html"
                                 class="block px-4 py-3 text-gray-700 hover:bg-blue-600 hover:text-white transition duration-200"
                             >
                                 💰 Realizar pago
@@ -94,7 +94,7 @@
                         <!-- Opción 2: Cobrar corte (cobranza.html) -->
                         <li>
                             <a
-                                href="cobranza.html"
+                                href="cobranza_employee.html"
                                 class="block px-4 py-3 text-gray-700 hover:bg-blue-600 hover:text-white transition duration-200"
                             >
                                 ✂️ Cobrar corte
@@ -104,7 +104,7 @@
                         <!-- Opción 3: Ver turnos (turnos.html) -->
                         <li>
                             <a
-                                href="turnos.html"
+                                href="turnos_employee.html"
                                 class="block px-4 py-3 text-gray-700 hover:bg-blue-600 hover:text-white transition duration-200"
                             >
                                 📅 Ver turnos
@@ -124,7 +124,7 @@
                 <div class="grid grid-cols-1 gap-3">
                     <!-- Card 1: Cobrar Corte -->
                     <a
-                        href="cobranza.html"
+                        href="cobranza_employee.html"
                         class="option-card block bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg p-4 shadow-md hover:shadow-xl text-center"
                     >
                         <div class="text-3xl mb-2">✂️</div>
@@ -133,7 +133,7 @@
 
                     <!-- Card 2: Realizar Pago -->
                     <a
-                        href="gastos_admin.html"
+                        href="gastos_admin_employee.html"
                         class="option-card block bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg p-4 shadow-md hover:shadow-xl text-center"
                     >
                         <div class="text-3xl mb-2">💰</div>
@@ -144,19 +144,57 @@
             
             <!-- Vínculo para Cerrar Sesión -->
             <div class="pt-4 text-center">
-                <a href="login.html" class="text-sm text-gray-500 hover:text-red-600 transition duration-150 ease-in-out font-medium">
+                <a href="login_employee.html" class="text-sm text-gray-500 hover:text-red-600 transition duration-150 ease-in-out font-medium">
                     Cerrar Sesión
                 </a>
             </div>
 
             <!-- Espacio para otros elementos o información -->
             <footer class="text-center pt-4">
-                <p class="text-sm text-gray-400">Panel de Acceso Rápido v1.0</p>
+                <p class="text-sm text-gray-400">Panel de Acceso Rápido v2.0</p>
             </footer>
 
         </div>
     </div>
 
+    <script type="module">
+        // Importar la configuración de Firebase
+        import { db, auth, initializationFailed } from './firebase-config.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // PROTECCIÓN: Verificar si el usuario ha iniciado sesión
+        // Esperar a que Firebase cargue la sesión almacenada
+        if (!initializationFailed && auth) {
+            let sessionChecked = false;
+            
+            onAuthStateChanged(auth, (user) => {
+                if (sessionChecked) {
+                    // Ya revisamos una vez, ignorar cambios posteriores
+                    return;
+                }
+                
+                sessionChecked = true;
+                
+                if (!user) {
+                    console.warn("No hay sesión activa. Redirigiendo al login...");
+                    window.location.href = 'login_employee.html';
+                } else {
+                    console.log("✓ Sesión verificada para usuario:", user.uid);
+                }
+            });
+            
+            // Timeout de seguridad: si no se detecta sesión en 3 segundos, redirigir
+            setTimeout(() => {
+                if (!sessionChecked && auth.currentUser === null) {
+                    sessionChecked = true;
+                    console.warn("Timeout: No se detectó sesión. Redirigiendo al login...");
+                    window.location.href = 'login_employee.html';
+                }
+            }, 3000);
+        } else if (initializationFailed) {
+            console.warn("Firebase no inicializado. Permitiendo acceso en modo de prueba.");
+        }
+    </script>
     <script>
         // Lógica de JavaScript para el menú desplegable dinámico
         

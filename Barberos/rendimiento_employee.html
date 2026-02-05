@@ -64,6 +64,82 @@
             background-color: #F8FAFC; /* Gris claro al pasar el mouse */
         }
         
+        /* Estilos mejorados para diseño premium */
+        
+        /* Metricas Cards - Gradientes y sombras mejoradas */
+        .grid > div {
+            background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+            border: 1px solid rgba(229, 231, 235, 0.8);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .grid > div:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+            border-color: rgba(37, 99, 235, 0.2);
+        }
+        
+        /* Botones de periodo - Animaciones suaves */
+        button[type="button"] {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button[type="button"]::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        button[type="button"]:active::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        /* Botones grises - hover mejorado */
+        button.bg-gray-200:hover {
+            background-color: #e5e7eb;
+            transform: scale(1.05);
+        }
+        
+        /* Botones azules - hover mejorado */
+        button.bg-primary-blue:hover {
+            background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.3);
+        }
+        
+        /* Selector de mes mejorado */
+        #prevMonth, #nextMonth {
+            background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        #prevMonth:hover, #nextMonth:hover {
+            background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Display del mes - Estilo premium */
+        #currentMonthDisplay {
+            background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+        }
+        
         /* Estilos específicos para impresión (oculta elementos innecesarios) */
         @media print {
             .app-container, .mt-6 {
@@ -194,90 +270,75 @@
             <div class="text-center">
                 <h2 class="text-3xl font-bold text-primary-blue mb-4 tracking-wide">Rendimiento de empleados</h2>
                 
+                <!-- Selector de Mes -->
+                <div class="mb-6 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 shadow-sm">
+                    <div class="flex items-center justify-center gap-4">
+                        <button type="button" id="prevMonth" class="px-3 py-2 bg-gradient-to-br from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 rounded-lg font-bold text-lg shadow-md transition-all transform hover:scale-110">◀</button>
+                        <div class="text-center flex-1">
+                            <p id="currentMonthDisplay" class="text-2xl font-black text-primary-blue mb-1">Febrero 2026</p>
+                            <p class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Mes actual</p>
+                        </div>
+                        <button type="button" id="nextMonth" class="px-3 py-2 bg-gradient-to-br from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 rounded-lg font-bold text-lg shadow-md transition-all transform hover:scale-110">▶</button>
+                    </div>
+                </div>
+                
                 <!-- Controles de período -->
-                <div class="flex gap-2 justify-center mb-4 flex-wrap">
-                    <button type="button" id="periodDay" class="px-4 py-2 rounded-lg font-semibold transition duration-200 bg-gray-200 text-gray-700 hover:bg-gray-300">📅 Hoy</button>
-                    <button type="button" id="periodWeek" class="px-4 py-2 rounded-lg font-semibold transition duration-200 bg-gray-200 text-gray-700 hover:bg-gray-300">📊 Esta Semana</button>
-                    <button type="button" id="periodMonth" class="px-4 py-2 rounded-lg font-semibold transition duration-200 bg-primary-blue text-white hover:bg-primary-blue-dark">📈 Este Mes</button>
+                <div class="flex gap-2 justify-center mb-6 flex-wrap">
+                    <button type="button" id="periodDay" class="px-5 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-gray-100 to-gray-200 text-gray-700 shadow-md hover:shadow-lg">📅 Hoy</button>
+                    <button type="button" id="periodWeek" class="px-5 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-gray-100 to-gray-200 text-gray-700 shadow-md hover:shadow-lg">📊 Esta Semana</button>
+                    <button type="button" id="periodMonth" class="px-5 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg hover:shadow-xl">📈 Este Mes</button>
                 </div>
             </div>
 
             <!-- Metrics: cortes, comisión, gastos, ventas insumos -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="p-3 border rounded-lg">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-primary-blue/10 rounded-md">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.5 8.5L15.5 15.5"/><path d="M15.5 8.5L8.5 15.5"/></svg>
+            <!-- Metrics: cortes, comisión, gastos, ventas insumos -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="p-4 border rounded-xl">
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="p-3 bg-blue-100 rounded-lg shadow-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.5 8.5L15.5 15.5"/><path d="M15.5 8.5L8.5 15.5"/></svg>
                         </div>
-                        <div>
-                            <div class="text-2xl font-bold" id="cutsCount">0</div>
-                            <div class="text-sm text-gray-600">Cortes realizados por otros barberos</div>
-                        </div>
+                        <span class="text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Cortes</span>
                     </div>
+                    <div class="text-3xl font-bold text-gray-900 mb-1" id="cutsCount">0</div>
+                    <div class="text-sm text-gray-600">Realizados por ti</div>
                 </div>
 
-                <div class="p-3 border rounded-lg">
-                    <div class="flex items-center gap-3">
-                        <div class="flex items-center gap-3">
-                            <div class="p-2 bg-primary-blue/10 rounded-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8"/><path d="M9 11h6"/></svg>
-                            </div>
-                            <div>
-                                <div class="text-2xl font-bold text-success-green" id="commissionEarned">$0.00</div>
-                                <div class="text-sm text-gray-600">Dinero ganado (por comisión)</div>
-                            </div>
+                <div class="p-4 border rounded-xl">
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="p-3 bg-green-100 rounded-lg shadow-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8"/><path d="M9 11h6"/></svg>
                         </div>
+                        <span class="text-xs font-semibold bg-green-100 text-green-700 px-2 py-1 rounded-full">Ingresos</span>
                     </div>
+                    <div class="text-3xl font-bold text-success-green mb-1" id="commissionEarned">$0.00</div>
+                    <div class="text-sm text-gray-600">Tu comisión</div>
                 </div>
 
-                <div class="p-3 border rounded-lg">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-primary-blue/10 rounded-md">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M21 3L3 21"/></svg>
+                <div class="p-4 border rounded-xl">
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="p-3 bg-amber-100 rounded-lg shadow-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><circle cx="12" cy="14" r="3"/></svg>
                         </div>
-                        <div>
-                            <div class="text-2xl font-bold" id="expensesCount">0</div>
-                            <div class="text-sm text-gray-600">Cantidad de gastos</div>
-                        </div>
+                        <span class="text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Ventas</span>
                     </div>
+                    <div class="text-3xl font-bold text-primary-blue mb-1" id="suppliesRevenue">$0.00</div>
+                    <div class="text-sm text-gray-600">Insumos vendidos</div>
                 </div>
+            </div>
 
-                <div class="p-3 border rounded-lg">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-primary-blue/10 rounded-md">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 1v22"/>
-                                <path d="M17 5H9a3 3 0 1 0 0 6h6a3 3 0 1 1 0 6H7"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <div class="text-2xl font-bold text-red-600" id="totalExpenses">$0.00</div>
-                            <div class="text-sm text-gray-600">Dinero gastado</div>
-                        </div>
+            <!-- Owner Total Card -->
+            <div class="p-4 border rounded-xl">
+                <div class="flex items-center justify-between gap-3 mb-2">
+                    <div class="p-3 bg-yellow-100 rounded-lg shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                     </div>
+                    <span class="text-xs font-semibold bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">Propietario</span>
                 </div>
-
-                <div class="p-3 border rounded-lg">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-primary-blue/10 rounded-md">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><circle cx="12" cy="14" r="3"/></svg>
-                        </div>
-                        <div>
-                            <div class="text-2xl font-bold text-primary-blue" id="suppliesRevenue">$0.00</div>
-                            <div class="text-sm text-gray-600">Dinero recaudado por ventas de insumos</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="p-3 border rounded-lg bg-yellow-50">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-yellow-200 rounded-md">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                        </div>
-                        <div>
-                            <div class="text-2xl font-bold text-yellow-700" id="ownerTotal">$0.00</div>
-                            <div class="text-sm text-gray-700">Total ganado por propietario (Federico)</div>
-                        </div>
+                <div class="text-3xl font-bold text-yellow-700 mb-1" id="ownerTotal">$0.00</div>
+                <div class="text-sm text-gray-600">Total ganado (Federico)</div>
+            </div>
                     </div>
                 </div>
             </div>
@@ -290,19 +351,33 @@
                     <input id="commissionInput" type="number" min="0" max="100" value="20" class="w-24 p-2 border rounded text-right" />
                 </div>
                 <div class="text-right">
-                    <button id="recalcBtn" class="px-4 py-2 bg-primary-blue text-white rounded">Recalcular</button>
+                    <button id="recalcBtn" class="px-4 py-2 bg-gradient-to-r from-primary-blue to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all transform hover:scale-105">Recalcular</button>
                 </div>
             </div>
 
-            <div class="mt-4">
-                <h3 class="text-sm font-semibold text-gray-700 mb-2">Detalle por barbero</h3>
-                <div id="barberList" class="space-y-2 text-sm text-gray-700"></div>
+            <div class="mt-8 p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 bg-primary-blue rounded-full"></span>
+                    Detalle por barbero
+                </h3>
+                <div id="barberList" class="space-y-3"></div>
+            </div>
+
+            <!-- Botón para volver al menú principal -->
+            <div class="mt-8 pt-6 border-t border-gray-200">
+                <a href="index_employee_employee.html" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold rounded-lg transition-all transform hover:scale-105 shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    Volver al Menú Principal
+                </a>
             </div>
         </div>
 
         <!-- Vínculo para volver (simulación de navegación) -->
-        <a href="index_admin.html" class="mt-6 text-sm text-primary-blue hover:text-primary-blue-dark transition duration-150 ease-in-out font-medium">
-            Volver a la Página Principal
+        <a href="index_employee_employee.html" class="mt-6 text-sm text-primary-blue hover:text-primary-blue-dark transition duration-150 ease-in-out font-medium hover:underline hidden">
+            ← Volver a la Página Principal
         </a>
 
     </div>
@@ -367,6 +442,28 @@
 
         // Variable global para rastrear el período actual
         let currentPeriod = 'month'; // 'day', 'week', 'month'
+        
+        // Variables para el selector de mes
+        let selectedDate = new Date(); // Fecha del mes seleccionado
+        
+        // Meses en español
+        const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                           'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+        // Función para actualizar el display del mes
+        function updateMonthDisplay() {
+            const monthName = monthNames[selectedDate.getMonth()];
+            const year = selectedDate.getFullYear();
+            const today = new Date();
+            const isCurrentMonth = selectedDate.getMonth() === today.getMonth() && 
+                                  selectedDate.getFullYear() === today.getFullYear();
+            
+            document.getElementById('currentMonthDisplay').textContent = `${monthName} ${year}`;
+            const label = document.querySelector('#currentMonthDisplay').nextElementSibling;
+            if (label) {
+                label.textContent = isCurrentMonth ? 'Mes actual' : 'Mes seleccionado';
+            }
+        }
 
         // Función para filtrar transacciones del día actual
         function filterTransactionsByDay(transactions) {
@@ -417,17 +514,37 @@
             return null;
         }
 
-        // Función para filtrar transacciones del mes actual
+        // Función para filtrar transacciones del mes actual o seleccionado
         function filterTransactionsByCurrentMonth(transactions) {
-            const today = new Date();
-            const currentYear = today.getFullYear();
-            const currentMonth = today.getMonth();
-            const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+            const year = selectedDate.getFullYear();
+            const month = selectedDate.getMonth();
+            const firstDayOfMonth = new Date(year, month, 1);
+            
+            // Calcular el primer día del siguiente mes
+            const lastDayOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
             
             return transactions.filter(transaction => {
                 let transactionDate = parseTransactionDate(transaction);
                 if (!transactionDate) return false;
-                return transactionDate >= firstDayOfMonth && transactionDate <= today;
+                return transactionDate >= firstDayOfMonth && transactionDate <= lastDayOfMonth;
+            });
+        }
+
+        // Función para actualizar los botones de período
+        function updatePeriodButtons() {
+            const periodButtons = ['periodDay', 'periodWeek', 'periodMonth'];
+            periodButtons.forEach(buttonId => {
+                const button = document.getElementById(buttonId);
+                if (button) {
+                    const period = buttonId.replace('period', '').toLowerCase();
+                    if (period === currentPeriod) {
+                        button.classList.add('bg-blue-600', 'text-white');
+                        button.classList.remove('bg-gray-200', 'text-gray-800');
+                    } else {
+                        button.classList.remove('bg-blue-600', 'text-white');
+                        button.classList.add('bg-gray-200', 'text-gray-800');
+                    }
+                }
             });
         }
 
@@ -513,14 +630,20 @@
                 // Federico es el propietario, recibe 100% de sus ganancias
                 const isFederico = operator === 'Federico';
                 const comm = isFederico ? stats.revenue : stats.revenue * (commissionPct / 100);
-                const commissionLabel = isFederico ? '(Propietario)' : `Comisión: $${comm.toFixed(2)}`;
-                return `<div class="flex justify-between p-2 border rounded-md">
-                    <div>${operator} <span class="text-sm text-gray-500">(${stats.cuts} cortes)</span></div>
-                    <div class="text-right"><div class="text-sm">$${stats.revenue.toFixed(2)}</div><div class="text-primary-blue font-semibold">${commissionLabel}</div></div>
+                const commissionLabel = isFederico ? '🏆 Propietario' : `💰 $${comm.toFixed(2)}`;
+                const badgeColor = isFederico ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700';
+                return `<div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex-1">
+                        <div class="font-bold text-gray-900">${operator}</div>
+                        <div class="text-sm text-gray-500">${stats.cuts} corte${stats.cuts !== 1 ? 's' : ''} • $${stats.revenue.toFixed(2)}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs font-bold ${badgeColor} px-2 py-1 rounded-full">${commissionLabel}</div>
+                    </div>
                 </div>`;
             }).join('');
             
-            document.getElementById('barberList').innerHTML = listHtml || '<div class="text-gray-500 text-sm">No hay datos de cortes aún</div>';
+            document.getElementById('barberList').innerHTML = listHtml || '<div class="text-center py-6 text-gray-500 text-sm">📊 No hay datos de cortes aún</div>';
         }
 
         // wire recalc button inside rendimiento panel
@@ -530,49 +653,51 @@
         computeRendimiento();
 
         // Función para manejar el click en el botón de cobro
-        chargeButton.addEventListener('click', () => {
-            
-            const total = parseFloat(totalAmountInput.value);
-            const selectedPayment = document.querySelector('input[name="pago"]:checked');
-            const selectedServiceElements = document.querySelectorAll('input[name="servicio"]:checked');
-            const selectedServices = Array.from(selectedServiceElements).map(cb => cb.value);
+        if (chargeButton) {
+            chargeButton.addEventListener('click', () => {
+                
+                const total = parseFloat(totalAmountInput.value);
+                const selectedPayment = document.querySelector('input[name="pago"]:checked');
+                const selectedServiceElements = document.querySelectorAll('input[name="servicio"]:checked');
+                const selectedServices = Array.from(selectedServiceElements).map(cb => cb.value);
 
-            // 1. Validaciones
-            if (selectedServices.length === 0) {
-                showMessage('Por favor, selecciona al menos un servicio.', 'error');
-                return;
-            }
+                // 1. Validaciones
+                if (selectedServices.length === 0) {
+                    showMessage('Por favor, selecciona al menos un servicio.', 'error');
+                    return;
+                }
 
-            if (!selectedPayment) {
-                showMessage('Por favor, selecciona un método de pago.', 'error');
-                return;
-            }
+                if (!selectedPayment) {
+                    showMessage('Por favor, selecciona un método de pago.', 'error');
+                    return;
+                }
 
-            if (isNaN(total) || total <= 0) {
-                showMessage('Debes ingresar un monto total válido y positivo.', 'error');
-                totalAmountInput.focus();
-                return;
-            }
-            
-            // Ocultar mensaje de error si las validaciones pasan
-            resultMessage.classList.add('hidden');
+                if (isNaN(total) || total <= 0) {
+                    showMessage('Debes ingresar un monto total válido y positivo.', 'error');
+                    totalAmountInput.focus();
+                    return;
+                }
+                
+                // Ocultar mensaje de error si las validaciones pasan
+                resultMessage.classList.add('hidden');
 
-            // 2. Simulación de la operación de cobro y generación de ID
-            const paymentType = selectedPayment.value;
-            const transactionId = generateTransactionId();
+                // 2. Simulación de la operación de cobro y generación de ID
+                const paymentType = selectedPayment.value;
+                const transactionId = generateTransactionId();
 
-            // En un entorno real, aquí se enviarían los datos a Firestore
-            console.log("--- Cobro Realizado y Enviado al Sistema ---");
-            console.log(`Monto: $${total.toFixed(2)} | Método: ${paymentType} | ID: ${transactionId}`);
-            console.log("----------------------------------------------");
+                // En un entorno real, aquí se enviarían los datos a Firestore
+                console.log("--- Cobro Realizado y Enviado al Sistema ---");
+                console.log(`Monto: $${total.toFixed(2)} | Método: ${paymentType} | ID: ${transactionId}`);
+                console.log("----------------------------------------------");
 
-            // 3. Mostrar el Ticket de Pago
-            showPaymentTicket(total, paymentType, selectedServices, transactionId);
+                // 3. Mostrar el Ticket de Pago
+                showPaymentTicket(total, paymentType, selectedServices, transactionId);
 
-            // Opcional: Limpiar el formulario después del cobro exitoso
-            serviceForm.reset();
-            totalAmountInput.value = '';
-        });
+                // Opcional: Limpiar el formulario después del cobro exitoso
+                serviceForm.reset();
+                totalAmountInput.value = '';
+            });
+        }
 
 
         /**
@@ -602,16 +727,20 @@
         }
 
         // Función para cerrar el modal
-        closeTicketButton.addEventListener('click', () => {
-            ticketModal.classList.add('hidden');
-        });
+        if (closeTicketButton) {
+            closeTicketButton.addEventListener('click', () => {
+                ticketModal.classList.add('hidden');
+            });
+        }
 
         // Cierra el modal al hacer click en el fondo gris
-        ticketModal.addEventListener('click', (event) => {
-            if (event.target === ticketModal) {
-                ticketModal.classList.add('hidden');
-            }
-        });
+        if (ticketModal) {
+            ticketModal.addEventListener('click', (event) => {
+                if (event.target === ticketModal) {
+                    ticketModal.classList.add('hidden');
+                }
+            });
+        }
 
 
         /**
@@ -633,23 +762,82 @@
             const dayBtn = document.getElementById('periodDay');
             const weekBtn = document.getElementById('periodWeek');
             const monthBtn = document.getElementById('periodMonth');
+        // Event listeners para los botones de período (usando addEventListener con captura)
+        setTimeout(function() {
+            const periodDay = document.getElementById('periodDay');
+            const periodWeek = document.getElementById('periodWeek');
+            const periodMonth = document.getElementById('periodMonth');
+            const prevMonth = document.getElementById('prevMonth');
+            const nextMonth = document.getElementById('nextMonth');
             
-            [dayBtn, weekBtn, monthBtn].forEach(btn => {
-                btn.classList.remove('bg-primary-blue', 'text-white', 'hover:bg-primary-blue-dark');
-                btn.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
-            });
+            console.log('Period buttons found:', { periodDay, periodWeek, periodMonth });
             
-            if (currentPeriod === 'day') {
-                dayBtn.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
-                dayBtn.classList.add('bg-primary-blue', 'text-white', 'hover:bg-primary-blue-dark');
-            } else if (currentPeriod === 'week') {
-                weekBtn.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
-                weekBtn.classList.add('bg-primary-blue', 'text-white', 'hover:bg-primary-blue-dark');
-            } else {
-                monthBtn.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
-                monthBtn.classList.add('bg-primary-blue', 'text-white', 'hover:bg-primary-blue-dark');
+            if (periodDay) {
+                periodDay.addEventListener('click', function(e) {
+                    console.log('Day button clicked');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    currentPeriod = 'day';
+                    updatePeriodButtons();
+                    computeRendimiento();
+                }, true);
             }
-        }
+            
+            if (periodWeek) {
+                periodWeek.addEventListener('click', function(e) {
+                    console.log('Week button clicked');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    currentPeriod = 'week';
+                    updatePeriodButtons();
+                    computeRendimiento();
+                }, true);
+            }
+            
+            if (periodMonth) {
+                periodMonth.addEventListener('click', function(e) {
+                    console.log('Month button clicked');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    currentPeriod = 'month';
+                    selectedDate = new Date();
+                    updateMonthDisplay();
+                    updatePeriodButtons();
+                    computeRendimiento();
+                }, true);
+            }
+            
+            if (prevMonth) {
+                prevMonth.addEventListener('click', function(e) {
+                    console.log('Previous month button clicked');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    selectedDate.setMonth(selectedDate.getMonth() - 1);
+                    updateMonthDisplay();
+                    computeRendimiento();
+                }, true);
+            }
+            
+            if (nextMonth) {
+                nextMonth.addEventListener('click', function(e) {
+                    console.log('Next month button clicked');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const today = new Date();
+                    if (selectedDate.getMonth() < today.getMonth() || 
+                        selectedDate.getFullYear() < today.getFullYear()) {
+                        selectedDate.setMonth(selectedDate.getMonth() + 1);
+                        updateMonthDisplay();
+                        computeRendimiento();
+                    }
+                }, true);
+            }
+            
+            // Inicializar display
+            updateMonthDisplay();
+            updatePeriodButtons();
+            
+        }, 100); // Delay de 100ms para asegurar que el DOM está listo
 
         // Event listeners para los botones de período
         const dayBtn = document.getElementById('periodDay');

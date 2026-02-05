@@ -22,7 +22,7 @@
         body { font-family: 'Lexend Deca', sans-serif; min-height: 100vh; }
         .app-container { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:1.5rem; }
         .item-row { display:flex; gap:0.75rem; align-items:center; }
-        .item-row input[type="number"] { width:140px; }
+        .item-row input[type="number"] { width:140px; color: #000000; font-weight: 500; }
         .small-muted { font-size:0.85rem; color:#6B7280; }
     </style>
 </head>
@@ -76,8 +76,15 @@
                 </div>
             </div>
 
-            <div class="mt-4 text-center">
-                <a href="index_admin.html" class="inline-block text-sm text-blue-600 hover:text-blue-700">← Volver a la página principal</a>
+            <!-- Botón para volver al menú principal -->
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <a href="index_admin_admin.html" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold rounded-lg transition-all transform hover:scale-105 shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    Volver a la Página Principal
+                </a>
             </div>
         </div>
     </div>
@@ -149,29 +156,42 @@
             currentServices.forEach(service => {
                 const row = document.createElement('div');
                 row.className = 'item-row p-3 border rounded-lg bg-white justify-between';
+                row.id = `service-${escapeAttr(service.id)}`;
                 row.innerHTML = `
                     <div class="flex-1">
                         <div class="font-medium text-gray-800">${escapeHtml(service.name)}</div>
                         <div class="text-sm small-muted">Nombre del servicio</div>
                     </div>
                     <div class="flex items-center gap-3">
-                        <input type="number" min="0" step="1" class="p-2 border border-gray-300 rounded-lg" 
+                        <input type="number" min="0" step="1" class="p-2 border border-gray-300 rounded-lg text-black font-medium" 
                                value="${Number(service.price).toFixed(2)}" 
                                data-service-id="${escapeAttr(service.id)}"
                                data-service-name="${escapeAttr(service.name)}">
-                        <button class="remove-btn py-1 px-3 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200">Eliminar</button>
+                        <button type="button" class="remove-btn py-1 px-3 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200">Eliminar</button>
                     </div>
                 `;
 
-                // Remove handler
-                row.querySelector('.remove-btn').addEventListener('click', async () => {
-                    if (!confirm(`Eliminar el servicio "${service.name}"?`)) return;
+                // Remove handler - Asegurar que siempre tenga acceso al servicio correcto
+                const removeBtn = row.querySelector('.remove-btn');
+                removeBtn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    if (!confirm(`¿Eliminar el servicio "${service.name}"?`)) return;
+                    
+                    removeBtn.disabled = true;
+                    removeBtn.textContent = 'Eliminando...';
+                    
                     try {
+                        console.log('Eliminando servicio:', service.name, 'ID:', service.id);
                         await servicesAPI.delete(service.name);
-                        // No need to call renderPrices - real-time listener handles it
+                        console.log('Servicio eliminado correctamente');
+                        row.remove(); // Remover el elemento del DOM inmediatamente
                     } catch (error) {
                         console.error('Error eliminando servicio:', error);
                         alert('Error al eliminar el servicio.');
+                        removeBtn.disabled = false;
+                        removeBtn.textContent = 'Eliminar';
                     }
                 });
 

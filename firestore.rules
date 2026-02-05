@@ -10,21 +10,26 @@ service cloud.firestore {
     // Colección de servicios (precios de servicios)
     // Solo usuarios autenticados pueden leer y escribir
     match /services/{serviceId} {
-      allow read, write: if isAuthenticated();
+      allow read: if true; // Lectura pública para rendimiento.html
+      allow write: if isAuthenticated();
     }
     
     // Colección de transacciones (cobranzas)
-    // Solo usuarios autenticados pueden leer y crear
+    // Lectura pública para mostrar en rendimiento.html
+    // Solo usuarios autenticados pueden crear
     // No se permite editar o eliminar transacciones para mantener integridad
     match /transactions/{transactionId} {
-      allow read, create: if isAuthenticated();
+      allow read: if true; // Lectura pública
+      allow create: if isAuthenticated();
       allow update, delete: if false; // Prevenir modificación de registros
     }
     
     // Colección de gastos
-    // Solo usuarios autenticados pueden leer y crear
+    // Lectura pública para mostrar en rendimiento.html
+    // Solo usuarios autenticados pueden crear
     match /expenses/{expenseId} {
-      allow read, create: if isAuthenticated();
+      allow read: if true; // Lectura pública
+      allow create: if isAuthenticated();
       allow update, delete: if false; // Prevenir modificación de registros
     }
     
