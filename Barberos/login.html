@@ -237,16 +237,22 @@
         setLogLevel('Debug');
 
         // --- Configuración de Variables Globales (MANDATORIAS) ---
-        const appId = "1:141615150603:web:b81230202000f198b4b90e";
-        const firebaseConfig = {
-          apiKey: "AIzaSyDZcbXf9j8-m1rZrp9IocnwAH2iMSd1ROs",
-          authDomain: "barberia-bless.firebaseapp.com",
-          projectId: "barberia-bless",
-          storageBucket: "barberia-bless.firebasestorage.app",
-          messagingSenderId: "141615150603",
-          appId: "1:141615150603:web:b81230202000f198b4b90e",
-          measurementId: "G-9E11Y5D6H6"
-        };
+        // Firebase configuration should be imported from external file: firebase-config.js
+        // This configuration is kept private and not versioned in Git
+        let firebaseConfig = null;
+        let appId = null;
+        
+        // Try to load from external config file
+        try {
+            // Dynamic import will be attempted
+            const configModule = await import('./firebase-config.js');
+            firebaseConfig = configModule.firebaseConfig;
+            appId = configModule.appId;
+        } catch (e) {
+            console.error("Firebase configuration not found. Please ensure firebase-config.js is configured properly.");
+            firebaseConfig = {}; // Empty config for fallback UI testing
+        }
+        
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
         // --- Inicialización de Firebase ---
@@ -311,9 +317,11 @@
                  console.warn("Fallo en la inicialización de Firebase. Realizando simulación de login para testear la UI.");
                  showLoading();
 
+                 // NOTA: Credenciales de prueba deben configurarse localmente
+                 // Esta es solo una fallback para testing de UI
                  const simulatedUsers = {
-                     'admin': { password: 'adminpassword', role: 'admin' },
-                     'barbero1': { password: 'barberopassword', role: 'employee' }
+                     'test_admin': { password: 'test123', role: 'admin' },
+                     'test_employee': { password: 'test123', role: 'employee' }
                  };
 
                  const user = simulatedUsers[username];
