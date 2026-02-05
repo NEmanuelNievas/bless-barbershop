@@ -20,44 +20,51 @@
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: { 'primary-blue': '#2563EB', 'primary-blue-dark': '#1D4ED8' }
+                    colors: { 
+                        'primary-blue': '#2563EB', 
+                        'primary-blue-dark': '#1D4ED8',
+                        'success-green': '#10B981',
+                        'error-red': '#EF4444'
+                    }
                 }
             }
         }
     </script>
     <style>
-        body { font-family: 'Inter', sans-serif; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .app-container { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem; }
-        .report-card { background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); padding: 2rem; margin: 1rem 0; }
+        body { font-family: 'Inter', sans-serif; min-height: 100vh; }
+        .app-container { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; }
+        .report-card { background: white; border-radius: 0.75rem; box-shadow: 0 20px 25px rgba(0,0,0,0.1); padding: 1.5rem 2rem; margin: 1rem 0; }
         .chart-container { position: relative; height: 400px; margin: 2rem 0; }
         .table-container { overflow-x: auto; margin: 2rem 0; }
-        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px; margin: 1rem 0; }
-        .filter-section { background: #f3f4f6; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; }
+        .stat-card { background: white; border: 1px solid #e5e7eb; color: #1f2937; padding: 1rem; border-radius: 0.5rem; margin: 0.5rem 0; }
+        .filter-section { background: #f9fafb; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; border: 1px solid #e5e7eb; }
         .tab { padding: 0.75rem 1.5rem; cursor: pointer; border: none; background: transparent; font-weight: 600; color: #6b7280; transition: all 0.3s; }
         .tab.active { color: #2563eb; border-bottom: 3px solid #2563eb; }
         .hidden-content { display: none; }
         .hidden-content.active { display: block; }
+        .neon-title { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     </style>
 </head>
 <body>
     <div class="app-container">
         <!-- Header -->
-        <div class="w-full max-w-6xl">
-            <div class="text-center mb-8 fade-in-up">
-                <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">REPORTES AVANZADOS</h1>
-                <p class="text-white text-opacity-80">Análisis detallado y estadísticas del negocio</p>
+        <div class="w-full max-w-6xl mb-8">
+            <div class="text-center mb-8">
+                <h1 class="neon-title text-4xl font-extrabold tracking-wide">REPORTES AVANZADOS</h1>
+                <p class="text-gray-600 mt-2">Análisis detallado y estadísticas del negocio</p>
             </div>
 
             <!-- Botón volver -->
             <div class="mb-6">
-                <a href="index_admin.html" class="bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition">
+                <a href="index_admin.html" class="text-primary-blue hover:text-primary-blue-dark font-semibold transition inline-flex items-center gap-2">
                     ← Volver al Dashboard
                 </a>
             </div>
         </div>
 
-        <!-- Tabs de navegación -->
-        <div class="w-full max-w-6xl bg-white rounded-t-lg shadow-lg">
+        <!-- Main container with white background -->
+        <div class="w-full max-w-6xl bg-white shadow-lg rounded-xl overflow-hidden">
+            <!-- Tabs de navegación -->
             <div class="flex flex-wrap border-b border-gray-200 px-4">
                 <button class="tab active" onclick="switchTab('ingresos')">📊 Ingresos</button>
                 <button class="tab" onclick="switchTab('gastos')">💰 Gastos</button>
@@ -65,31 +72,33 @@
                 <button class="tab" onclick="switchTab('clientes')">👥 Clientes</button>
                 <button class="tab" onclick="switchTab('comparativo')">📈 Comparativo</button>
             </div>
-        </div>
 
-        <!-- SECCIÓN: INGRESOS -->
-        <div id="ingresos" class="w-full max-w-6xl report-card hidden-content active fade-in-up">
-            <h2 class="text-3xl font-bold text-gray-900 mb-6">Reporte de Ingresos</h2>
+            <!-- Tab contents -->
+            <div class="p-6"
+
+            <!-- SECCIÓN: INGRESOS -->
+            <div id="ingresos" class="hidden-content active">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Reporte de Ingresos</h2>
             
             <!-- Filtros -->
             <div class="filter-section">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha Inicio</label>
-                        <input type="date" id="ingreso_start" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                        <input type="date" id="ingreso_start" class="w-full border border-gray-300 rounded px-3 py-2" />
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha Fin</label>
-                        <input type="date" id="ingreso_end" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                        <input type="date" id="ingreso_end" class="w-full border border-gray-300 rounded px-3 py-2" />
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Empleado (Opcional)</label>
-                        <select id="ingreso_empleado" class="w-full border-2 border-gray-300 rounded px-3 py-2">
+                        <select id="ingreso_empleado" class="w-full border border-gray-300 rounded px-3 py-2">
                             <option value="">Todos</option>
                         </select>
                     </div>
                     <div class="flex items-end gap-2">
-                        <button onclick="generateIngresoReport()" class="bg-blue-600 text-white px-6 py-2 rounded font-semibold hover:bg-blue-700 transition flex-1">
+                        <button onclick="generateIngresoReport()" class="bg-primary-blue text-white px-6 py-2 rounded font-semibold hover:bg-primary-blue-dark transition flex-1">
                             Generar Reporte
                         </button>
                     </div>
@@ -109,38 +118,38 @@
 
             <!-- Botones de exportación -->
             <div class="flex gap-2 mt-6">
-                <button onclick="exportIngresoCSV()" class="bg-green-600 text-white px-4 py-2 rounded font-semibold hover:bg-green-700 transition">
+                <button onclick="exportIngresoCSV()" class="bg-success-green text-white px-4 py-2 rounded font-semibold hover:bg-success-green transition">
                     📥 Descargar CSV
                 </button>
-                <button onclick="exportIngresoPDF()" class="bg-red-600 text-white px-4 py-2 rounded font-semibold hover:bg-red-700 transition">
+                <button onclick="exportIngresoPDF()" class="bg-error-red text-white px-4 py-2 rounded font-semibold hover:bg-error-red transition">
                     📄 Descargar PDF
                 </button>
             </div>
-        </div>
+            </div>
 
         <!-- SECCIÓN: GASTOS -->
-        <div id="gastos" class="w-full max-w-6xl report-card hidden-content fade-in-up">
-            <h2 class="text-3xl font-bold text-gray-900 mb-6">Reporte de Gastos</h2>
+            <div id="gastos" class="hidden-content">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Reporte de Gastos</h2>
             
             <!-- Filtros -->
             <div class="filter-section">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha Inicio</label>
-                        <input type="date" id="gasto_start" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                        <input type="date" id="gasto_start" class="w-full border border-gray-300 rounded px-3 py-2" />
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha Fin</label>
-                        <input type="date" id="gasto_end" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                        <input type="date" id="gasto_end" class="w-full border border-gray-300 rounded px-3 py-2" />
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Categoría (Opcional)</label>
-                        <select id="gasto_categoria" class="w-full border-2 border-gray-300 rounded px-3 py-2">
+                        <select id="gasto_categoria" class="w-full border border-gray-300 rounded px-3 py-2">
                             <option value="">Todas</option>
                         </select>
                     </div>
                     <div class="flex items-end gap-2">
-                        <button onclick="generateGastosReport()" class="bg-blue-600 text-white px-6 py-2 rounded font-semibold hover:bg-blue-700 transition flex-1">
+                        <button onclick="generateGastosReport()" class="bg-primary-blue text-white px-6 py-2 rounded font-semibold hover:bg-primary-blue-dark transition flex-1">
                             Generar Reporte
                         </button>
                     </div>
@@ -160,32 +169,32 @@
 
             <!-- Botones de exportación -->
             <div class="flex gap-2 mt-6">
-                <button onclick="exportGastosCSV()" class="bg-green-600 text-white px-4 py-2 rounded font-semibold hover:bg-green-700 transition">
+                <button onclick="exportGastosCSV()" class="bg-success-green text-white px-4 py-2 rounded font-semibold hover:bg-success-green transition">
                     📥 Descargar CSV
                 </button>
-                <button onclick="exportGastosPDF()" class="bg-red-600 text-white px-4 py-2 rounded font-semibold hover:bg-red-700 transition">
+                <button onclick="exportGastosPDF()" class="bg-error-red text-white px-4 py-2 rounded font-semibold hover:bg-error-red transition">
                     📄 Descargar PDF
                 </button>
             </div>
-        </div>
+            </div>
 
         <!-- SECCIÓN: RENDIMIENTO -->
-        <div id="rendimiento" class="w-full max-w-6xl report-card hidden-content fade-in-up">
-            <h2 class="text-3xl font-bold text-gray-900 mb-6">Reporte de Rendimiento</h2>
+            <div id="rendimiento" class="hidden-content">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Reporte de Rendimiento</h2>
             
             <!-- Filtros -->
             <div class="filter-section">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha Inicio</label>
-                        <input type="date" id="rend_start" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                        <input type="date" id="rend_start" class="w-full border border-gray-300 rounded px-3 py-2" />
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha Fin</label>
-                        <input type="date" id="rend_end" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                        <input type="date" id="rend_end" class="w-full border border-gray-300 rounded px-3 py-2" />
                     </div>
                     <div class="flex items-end gap-2">
-                        <button onclick="generateRendimientoReport()" class="bg-blue-600 text-white px-6 py-2 rounded font-semibold hover:bg-blue-700 transition flex-1">
+                        <button onclick="generateRendimientoReport()" class="bg-primary-blue text-white px-6 py-2 rounded font-semibold hover:bg-primary-blue-dark transition flex-1">
                             Generar Reporte
                         </button>
                     </div>
@@ -200,39 +209,39 @@
 
             <!-- Botones de exportación -->
             <div class="flex gap-2 mt-6">
-                <button onclick="exportRendimientoCSV()" class="bg-green-600 text-white px-4 py-2 rounded font-semibold hover:bg-green-700 transition">
+                <button onclick="exportRendimientoCSV()" class="bg-success-green text-white px-4 py-2 rounded font-semibold hover:bg-success-green transition">
                     📥 Descargar CSV
                 </button>
-                <button onclick="exportRendimientoPDF()" class="bg-red-600 text-white px-4 py-2 rounded font-semibold hover:bg-red-700 transition">
+                <button onclick="exportRendimientoPDF()" class="bg-error-red text-white px-4 py-2 rounded font-semibold hover:bg-error-red transition">
                     📄 Descargar PDF
                 </button>
             </div>
-        </div>
+            </div>
 
         <!-- SECCIÓN: CLIENTES -->
-        <div id="clientes" class="w-full max-w-6xl report-card hidden-content fade-in-up">
-            <h2 class="text-3xl font-bold text-gray-900 mb-6">Reporte de Clientes</h2>
+            <div id="clientes" class="hidden-content">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Reporte de Clientes</h2>
             
             <!-- Filtros -->
             <div class="filter-section">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha Inicio</label>
-                        <input type="date" id="cliente_start" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                        <input type="date" id="cliente_start" class="w-full border border-gray-300 rounded px-3 py-2" />
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Fecha Fin</label>
-                        <input type="date" id="cliente_end" class="w-full border-2 border-gray-300 rounded px-3 py-2" />
+                        <input type="date" id="cliente_end" class="w-full border border-gray-300 rounded px-3 py-2" />
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Ordenar por</label>
-                        <select id="cliente_orden" class="w-full border-2 border-gray-300 rounded px-3 py-2">
+                        <select id="cliente_orden" class="w-full border border-gray-300 rounded px-3 py-2">
                             <option value="frecuencia">Frecuencia</option>
                             <option value="gasto">Gasto Total</option>
                         </select>
                     </div>
                     <div class="flex items-end gap-2">
-                        <button onclick="generateClientesReport()" class="bg-blue-600 text-white px-6 py-2 rounded font-semibold hover:bg-blue-700 transition flex-1">
+                        <button onclick="generateClientesReport()" class="bg-primary-blue text-white px-6 py-2 rounded font-semibold hover:bg-primary-blue-dark transition flex-1">
                             Generar Reporte
                         </button>
                     </div>
@@ -247,18 +256,18 @@
 
             <!-- Botones de exportación -->
             <div class="flex gap-2 mt-6">
-                <button onclick="exportClientesCSV()" class="bg-green-600 text-white px-4 py-2 rounded font-semibold hover:bg-green-700 transition">
+                <button onclick="exportClientesCSV()" class="bg-success-green text-white px-4 py-2 rounded font-semibold hover:bg-success-green transition">
                     📥 Descargar CSV
                 </button>
-                <button onclick="exportClientesPDF()" class="bg-red-600 text-white px-4 py-2 rounded font-semibold hover:bg-red-700 transition">
+                <button onclick="exportClientesPDF()" class="bg-error-red text-white px-4 py-2 rounded font-semibold hover:bg-error-red transition">
                     📄 Descargar PDF
                 </button>
             </div>
-        </div>
+            </div>
 
         <!-- SECCIÓN: COMPARATIVO -->
-        <div id="comparativo" class="w-full max-w-6xl report-card hidden-content fade-in-up">
-            <h2 class="text-3xl font-bold text-gray-900 mb-6">Comparativo de Períodos</h2>
+            <div id="comparativo" class="hidden-content">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Comparativo de Períodos</h2>
             
             <!-- Filtros -->
             <div class="filter-section">
@@ -290,13 +299,14 @@
                         </div>
                     </div>
                 </div>
-                <button onclick="generateComparativoReport()" class="bg-blue-600 text-white px-6 py-2 rounded font-semibold hover:bg-blue-700 transition w-full md:w-auto">
+                <button onclick="generateComparativoReport()" class="bg-primary-blue text-white px-6 py-2 rounded font-semibold hover:bg-primary-blue-dark transition w-full md:w-auto">
                     Comparar Períodos
                 </button>
             </div>
 
             <!-- Resultados -->
             <div id="comp_results" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+            </div>
         </div>
     </div>
 
