@@ -195,10 +195,10 @@
                 <h2 class="text-3xl font-bold text-primary-blue mb-4 tracking-wide">Rendimiento de empleados</h2>
                 
                 <!-- Controles de período -->
-                <div class="flex gap-2 justify-center mb-4">
-                    <button id="periodDay" class="px-4 py-2 rounded-lg font-semibold transition duration-200 bg-gray-200 text-gray-700 hover:bg-gray-300">📅 Hoy</button>
-                    <button id="periodWeek" class="px-4 py-2 rounded-lg font-semibold transition duration-200 bg-gray-200 text-gray-700 hover:bg-gray-300">📊 Esta Semana</button>
-                    <button id="periodMonth" class="px-4 py-2 rounded-lg font-semibold transition duration-200 bg-primary-blue text-white hover:bg-primary-blue-dark">📈 Este Mes</button>
+                <div class="flex gap-2 justify-center mb-4 flex-wrap">
+                    <button type="button" id="periodDay" class="px-4 py-2 rounded-lg font-semibold transition duration-200 bg-gray-200 text-gray-700 hover:bg-gray-300">📅 Hoy</button>
+                    <button type="button" id="periodWeek" class="px-4 py-2 rounded-lg font-semibold transition duration-200 bg-gray-200 text-gray-700 hover:bg-gray-300">📊 Esta Semana</button>
+                    <button type="button" id="periodMonth" class="px-4 py-2 rounded-lg font-semibold transition duration-200 bg-primary-blue text-white hover:bg-primary-blue-dark">📈 Este Mes</button>
                 </div>
             </div>
 
@@ -652,23 +652,36 @@
         }
 
         // Event listeners para los botones de período
-        document.getElementById('periodDay').addEventListener('click', () => {
-            currentPeriod = 'day';
-            updatePeriodButtons();
-            computeRendimiento();
-        });
+        const dayBtn = document.getElementById('periodDay');
+        const weekBtn = document.getElementById('periodWeek');
+        const monthBtn = document.getElementById('periodMonth');
+        
+        if (dayBtn) {
+            dayBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                currentPeriod = 'day';
+                updatePeriodButtons();
+                computeRendimiento();
+            });
+        }
 
-        document.getElementById('periodWeek').addEventListener('click', () => {
-            currentPeriod = 'week';
-            updatePeriodButtons();
-            computeRendimiento();
-        });
+        if (weekBtn) {
+            weekBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                currentPeriod = 'week';
+                updatePeriodButtons();
+                computeRendimiento();
+            });
+        }
 
-        document.getElementById('periodMonth').addEventListener('click', () => {
-            currentPeriod = 'month';
-            updatePeriodButtons();
-            computeRendimiento();
-        });
+        if (monthBtn) {
+            monthBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                currentPeriod = 'month';
+                updatePeriodButtons();
+                computeRendimiento();
+            });
+        }
 
     </script>
 </body>
