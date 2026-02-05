@@ -77,6 +77,7 @@
         // --- FIREBASE IMPORTS ---
         import { clientsAPI, transactionsAPI } from './firebase-config.js';
         import { validateFields, displayValidationErrors, clearValidationErrors, validateFile } from './validation-utils.js';
+        import { showSuccess, showError } from './toast-notifications.js';
 
         const form = document.getElementById('clientForm');
         const nameInput = document.getElementById('name');
@@ -339,6 +340,8 @@
                 console.log('✅ Cliente agregado a Firestore con Validación');
                 console.log(clientData);
                 
+                showSuccess(`✅ Cliente agregado: ${clientData.name}`, 3000);
+                
                 await renderClients();
 
                 form.reset();
@@ -350,6 +353,7 @@
                 submitBtn.textContent = 'Agregar Cliente';
             } catch (error) {
                 console.error('Error al agregar cliente:', error);
+                showError('❌ Error al guardar el cliente. Intenta nuevamente.');
                 displayValidationErrors({ general: 'Error al guardar el cliente. Por favor intente nuevamente.' }, 'validationErrors');
                 
                 submitBtn.disabled = false;

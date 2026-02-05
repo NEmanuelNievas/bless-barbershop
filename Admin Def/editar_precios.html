@@ -76,6 +76,7 @@
     <script type="module">
         import { servicesAPI } from './firebase-config.js';
         import { validateFields, displayValidationErrors, clearValidationErrors } from './validation-utils.js';
+        import { showSuccess, showError, showInfo } from './toast-notifications.js';
 
         // Default prices (same initial mapping as cobranza)
         const DEFAULT_PRICES = {
@@ -230,9 +231,11 @@
                 newServiceName.value = '';
                 newServicePrice.value = '';
                 console.log('✅ Servicio agregado correctamente:', name);
+                showSuccess(`✅ Servicio agregado: ${name} - $${price}`, 3000);
                 // No need to call renderPrices - real-time listener handles it
             } catch (error) {
                 console.error('Error agregando servicio:', error);
+                showError('❌ Error al agregar el servicio.');
                 displayValidationErrors({ general: 'Error al agregar el servicio.' }, 'validationErrors');
             }
         });
@@ -252,10 +255,10 @@
                 });
                 
                 await Promise.all(promises);
-                alert('✅ Precios guardados correctamente.');
+                showSuccess('✅ Precios guardados correctamente.');
             } catch (error) {
                 console.error('Error guardando precios:', error);
-                alert('Error al guardar algunos precios. Verifica la consola.');
+                showError('❌ Error al guardar algunos precios.');
             }
         });
 
@@ -271,10 +274,10 @@
                 
                 // Initialize defaults
                 await servicesAPI.initDefaults();
-                alert('✅ Precios restaurados por defecto.');
+                showSuccess('✅ Precios restaurados por defecto.');
             } catch (error) {
                 console.error('Error restaurando defaults:', error);
-                alert('Error al restaurar precios.');
+                showError('❌ Error al restaurar precios.');
             }
         });
 
@@ -286,10 +289,10 @@
                 for (const service of currentServices) {
                     await servicesAPI.delete(service.name);
                 }
-                alert('✅ Todos los servicios eliminados.');
+                showSuccess('✅ Todos los servicios eliminados.');
             } catch (error) {
                 console.error('Error eliminando servicios:', error);
-                alert('Error al eliminar servicios.');
+                showError('❌ Error al eliminar servicios.');
             }
         });
 

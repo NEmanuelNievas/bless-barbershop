@@ -426,6 +426,7 @@
     // Lógica de JavaScript para el Ticket de Pago y la Transacción
     import { servicesAPI, transactionsAPI, settingsAPI, clientsAPI } from './firebase-config.js';
     import { validateFields, displayValidationErrors, clearValidationErrors } from './validation-utils.js';
+    import { showSuccess, showError, showInfo } from './toast-notifications.js';
         
     const totalAmountInput = document.getElementById('totalAmount');
         const chargeButton = document.getElementById('chargeButton');
@@ -799,6 +800,8 @@
                 console.log("✅ Cobro Realizado y Guardado en Firestore con Validación");
                 console.log(`Monto: $${total.toFixed(2)} | Método: ${paymentType} | ID: ${transactionId} | Cliente: ${selectedClient ? selectedClient.name : 'N/A'}`);
 
+                showSuccess(`✅ Cobro registrado: $${total.toFixed(2)} | ${transactionId}`, 3000);
+
                 // 4. Mostrar el Ticket de Pago
                 showPaymentTicket(total, paymentType, selectedServices, transactionId, selectedOperator, selectedClient ? selectedClient.name : null);
 
@@ -882,7 +885,8 @@
                 
             } catch (error) {
                 console.error('Error al procesar el cobro:', error);
-                showMessage('Error al guardar la transacción. Por favor, intenta nuevamente.', 'error');
+                showError('❌ Error al guardar la transacción. Intenta nuevamente.');
+                displayValidationErrors({ general: 'Error al guardar la transacción. Por favor, intenta nuevamente.' }, 'validationErrors');
             } finally {
                 // Rehabilitar botón
                 chargeButton.disabled = false;

@@ -300,6 +300,7 @@
         // --- FIREBASE IMPORTS ---
         import { expensesAPI } from './firebase-config.js';
         import { validateFields, displayValidationErrors, clearValidationErrors, validateFile } from './validation-utils.js';
+        import { showSuccess, showError } from './toast-notifications.js';
 
         // Lógica de JavaScript para la gestión de gastos
 
@@ -510,6 +511,8 @@
                 console.log("✅ Gasto Registrado y Guardado en Firestore con Validación");
                 console.log(expenseData);
 
+                showSuccess(`✅ Gasto registrado: $${expenseData.amount} - ${expenseData.category}`, 3000);
+
                 // 4. Mostrar Modal de Éxito
                 showSuccessModal({
                     monto: expenseData.amount,
@@ -534,6 +537,7 @@
 
             } catch (error) {
                 console.error('Error al guardar gasto:', error);
+                showError('❌ Error al guardar el gasto. Intenta nuevamente.');
                 displayValidationErrors({ general: 'Error al guardar el gasto. Por favor intente nuevamente.' }, 'validationErrors');
                 
                 // Rehabilitar botón en caso de error
