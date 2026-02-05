@@ -364,8 +364,17 @@
                 return sum + amount;
             }, 0);
             
+            // Calcular comisión solo de los empleados (excluyendo a Federico que es el propietario)
+            const employeeRevenue = transactions.reduce((sum, t) => {
+                if (t.operador !== 'Federico') {
+                    const amount = parseFloat(t.monto) || 0;
+                    return sum + amount;
+                }
+                return sum;
+            }, 0);
+            
             const commissionPct = parseFloat(document.getElementById('commissionInput')?.value || '0');
-            const commissionEarned = totalCutRevenue * (commissionPct / 100);
+            const commissionEarned = employeeRevenue * (commissionPct / 100);
             
             // Cargar gastos reales desde Firestore
             const expenses = await loadExpenses();
