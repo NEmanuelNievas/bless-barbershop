@@ -192,7 +192,14 @@
         <!-- Contenedor principal (plantilla) -->
         <div class="w-full max-w-lg bg-white shadow-2xl rounded-xl p-6 md:p-10 space-y-6">
             <div class="text-center">
-                <h2 class="text-3xl font-bold text-primary-blue mb-2 tracking-wide">Rendimiento de empleados</h2>
+                <h2 class="text-3xl font-bold text-primary-blue mb-4 tracking-wide">Rendimiento de empleados</h2>
+                
+                <!-- Controles de período -->
+                <div class="flex gap-2 justify-center mb-4">
+                    <button id="periodDay" class="px-4 py-2 rounded-lg font-semibold transition duration-200 bg-gray-200 text-gray-700 hover:bg-gray-300">📅 Hoy</button>
+                    <button id="periodWeek" class="px-4 py-2 rounded-lg font-semibold transition duration-200 bg-gray-200 text-gray-700 hover:bg-gray-300">📊 Esta Semana</button>
+                    <button id="periodMonth" class="px-4 py-2 rounded-lg font-semibold transition duration-200 bg-primary-blue text-white hover:bg-primary-blue-dark">📈 Este Mes</button>
+                </div>
             </div>
 
             <!-- Metrics: cortes, comisión, gastos, ventas insumos -->
@@ -358,42 +365,68 @@
             }
         }
 
-        // Función auxiliar para filtrar transacciones del mes actual
+        // Variable global para rastrear el período actual
+        let currentPeriod = 'month'; // 'day', 'week', 'month'
+
+        // Función para filtrar transacciones del día actual
+        function filterTransactionsByDay(transactions) {
+            const today = new Date();
+            const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+            
+            return transactions.filter(transaction => {
+                let transactionDate = parseTransactionDate(transaction);
+                if (!transactionDate) return false;
+                return transactionDate >= startOfDay && transactionDate < endOfDay;
+            });
+        }
+
+        // Función para filtrar transacciones de esta semana (lunes a domingo)
+        function filterTransactionsByWeek(transactions) {
+            const today = new Date();
+            const dayOfWeek = today.getDay(); // 0 = domingo, 1 = lunes, etc.
+            const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Si es domingo, retrocede 6 días
+            
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - daysToMonday);
+            startOfWeek.setHours(0, 0, 0, 0);
+            
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 7);
+            
+            return transactions.filter(transaction => {
+                let transactionDate = parseTransactionDate(transaction);
+                if (!transactionDate) return false;
+                return transactionDate >= startOfWeek && transactionDate < endOfWeek;
+            });
+        }
+
+        // Función auxiliar para parsear fechas
+        function parseTransactionDate(transaction) {
+            if (transaction.fecha) {
+                if (typeof transaction.fecha === 'string') {
+                    return new Date(transaction.fecha);
+                } else if (transaction.fecha.toDate) {
+                    return transaction.fecha.toDate();
+                } else {
+                    return new Date(transaction.fecha);
+                }
+            } else if (transaction.timestamp) {
+                return new Date(transaction.timestamp);
+            }
+            return null;
+        }
+
+        // Función para filtrar transacciones del mes actual
         function filterTransactionsByCurrentMonth(transactions) {
             const today = new Date();
             const currentYear = today.getFullYear();
-            const currentMonth = today.getMonth(); // 0-indexed (0 = enero, 11 = diciembre)
+            const currentMonth = today.getMonth();
             const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
             
             return transactions.filter(transaction => {
-                let transactionDate;
-                
-                // Intentar parsear fecha en formato ISO (2024-12-15) o timestamp
-                if (transaction.fecha) {
-                    if (typeof transaction.fecha === 'string') {
-                        // Formato ISO: 2024-12-15
-                        transactionDate = new Date(transaction.fecha);
-                    } else if (transaction.fecha.toDate) {
-                        // Firebase Timestamp
-                        transactionDate = transaction.fecha.toDate();
-                    } else {
-                        // Intenta como número (milisegundos)
-                        transactionDate = new Date(transaction.fecha);
-                    }
-                } else if (transaction.timestamp) {
-                    // Alternativa: usar timestamp
-                    transactionDate = new Date(transaction.timestamp);
-                } else {
-                    // Si no hay fecha, excluir
-                    return false;
-                }
-                
-                // Validar que la fecha sea válida
-                if (isNaN(transactionDate.getTime())) {
-                    return false;
-                }
-                
-                // Filtrar: la transacción debe estar entre el 1 del mes actual y hoy
+                let transactionDate = parseTransactionDate(transaction);
+                if (!transactionDate) return false;
                 return transactionDate >= firstDayOfMonth && transactionDate <= today;
             });
         }
@@ -409,8 +442,14 @@
             // Cargar transacciones reales desde Firestore
             let transactions = await loadTransactions();
             
-            // Filtrar transacciones del mes actual (acumulativo desde el 1 del mes hasta hoy)
-            transactions = filterTransactionsByCurrentMonth(transactions);
+            // Filtrar según el período seleccionado
+            if (currentPeriod === 'day') {
+                transactions = filterTransactionsByDay(transactions);
+            } else if (currentPeriod === 'week') {
+                transactions = filterTransactionsByWeek(transactions);
+            } else {
+                transactions = filterTransactionsByCurrentMonth(transactions);
+            }
             const totalCuts = transactions.length;
             
             // Calcular ingresos totales por cortes
@@ -588,6 +627,48 @@
                 resultMessage.classList.add('hidden');
             }, 5000);
         }
+
+        // Función para actualizar los estilos de los botones de período
+        function updatePeriodButtons() {
+            const dayBtn = document.getElementById('periodDay');
+            const weekBtn = document.getElementById('periodWeek');
+            const monthBtn = document.getElementById('periodMonth');
+            
+            [dayBtn, weekBtn, monthBtn].forEach(btn => {
+                btn.classList.remove('bg-primary-blue', 'text-white', 'hover:bg-primary-blue-dark');
+                btn.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+            });
+            
+            if (currentPeriod === 'day') {
+                dayBtn.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+                dayBtn.classList.add('bg-primary-blue', 'text-white', 'hover:bg-primary-blue-dark');
+            } else if (currentPeriod === 'week') {
+                weekBtn.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+                weekBtn.classList.add('bg-primary-blue', 'text-white', 'hover:bg-primary-blue-dark');
+            } else {
+                monthBtn.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+                monthBtn.classList.add('bg-primary-blue', 'text-white', 'hover:bg-primary-blue-dark');
+            }
+        }
+
+        // Event listeners para los botones de período
+        document.getElementById('periodDay').addEventListener('click', () => {
+            currentPeriod = 'day';
+            updatePeriodButtons();
+            computeRendimiento();
+        });
+
+        document.getElementById('periodWeek').addEventListener('click', () => {
+            currentPeriod = 'week';
+            updatePeriodButtons();
+            computeRendimiento();
+        });
+
+        document.getElementById('periodMonth').addEventListener('click', () => {
+            currentPeriod = 'month';
+            updatePeriodButtons();
+            computeRendimiento();
+        });
 
     </script>
 </body>
