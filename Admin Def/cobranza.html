@@ -341,20 +341,20 @@
                 </button>
             </div>
 
-            <!-- Contenedor para Errores de Validación -->
-            <div id="validationErrors" class="hidden mt-6" role="alert">
-                <!-- Se pobla con errores de validación si las reglas fallan -->
-            </div>
-
             <!-- Mensaje de Resultado para ERRORES (Se usa para validaciones) -->
             <div id="resultMessage" class="hidden mt-6 p-3 bg-red-100 border border-error-red text-center rounded-lg text-error-red font-medium" role="alert">
                 <!-- Se pobla con mensajes de error si la validación falla -->
             </div>
 
+            <!-- Contenedor para Errores de Validación -->
+            <div id="validationErrors" class="hidden mt-6" role="alert">
+                <!-- Se pobla con errores de validación si las reglas fallan -->
+            </div>
+
         </div>
 
         <!-- Vínculo para volver (simulación de navegación) -->
-        <a href="index_admin.html" class="mt-6 text-sm text-primary-blue hover:text-primary-blue-dark transition duration-150 ease-in-out font-medium">
+        <a href="index_employee.html" class="mt-6 text-sm text-primary-blue hover:text-primary-blue-dark transition duration-150 ease-in-out font-medium">
             Volver a la Página Principal
         </a>
 
@@ -400,110 +400,6 @@
             } catch (error) {
                 console.error('Error cargando transacciones:', error);
                 return [];
-            }
-        }
-
-        /**
-         * Agrega una nueva transacción a Firestore
-         * @param {Object} transaction - Objeto con datos de la transacción
-         */
-        async function addTransaction(transaction) {
-            try {
-                const docId = await transactionsAPI.create(transaction);
-                console.log('✅ Transacción guardada en Firestore con ID:', docId);
-                return docId;
-            } catch (error) {
-                console.error('❌ Error guardando transacción:', error);
-                throw error;
-            }
-        }
-
-        /**
-         * Exporta las transacciones a un archivo Excel mensual (MANUAL)
-         */
-        async function exportToExcel() {
-            const transactions = await loadTransactions();
-            
-            if (transactions.length === 0) {
-                return; // No hay nada que exportar
-            }
-
-            try {
-                // Obtener mes y año actual
-                const now = new Date();
-                const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-                
-                // Filtrar transacciones del mes actual
-                const monthTransactions = transactions.filter(t => {
-                    const transDate = new Date(t.fecha);
-                    const transMonth = transDate.getFullYear() + '-' + String(transDate.getMonth() + 1).padStart(2, '0');
-                    return transMonth === currentMonth;
-                });
-
-                if (monthTransactions.length === 0) {
-                    return; // No hay transacciones del mes actual
-                }
-
-                // Preparar datos para Excel
-                const excelData = monthTransactions.map(t => ({
-                    'Fecha': new Date(t.fecha).toLocaleDateString('es-AR'),
-                    'Hora': new Date(t.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
-                    'ID Transacción': t.transactionId,
-                    'Operador': t.operador,
-                    'Servicios': t.servicios.join(', '),
-                    'Método de Pago': t.metodoPago,
-                    'Monto': `$${t.monto}`
-                }));
-
-                // Calcular total del mes
-                const monthTotal = monthTransactions.reduce((sum, t) => {
-                    const amount = parseFloat(t.monto) || 0;
-                    return sum + amount;
-                }, 0);
-
-                // Agregar fila de total
-                excelData.push({
-                    'Fecha': '',
-                    'Hora': '',
-                    'ID Transacción': '',
-                    'Operador': '',
-                    'Servicios': 'TOTAL',
-                    'Método de Pago': '',
-                    'Monto': `$${monthTotal.toFixed(2)}`
-                });
-
-                // Crear workbook y worksheet
-                const wb = XLSX.utils.book_new();
-                const ws = XLSX.utils.json_to_sheet(excelData);
-                
-                // Ajustar anchos de columna
-                ws['!cols'] = [
-                    { wch: 12 },  // Fecha
-                    { wch: 8 },   // Hora
-                    { wch: 15 },  // ID Transacción
-                    { wch: 12 },  // Operador
-                    { wch: 35 },  // Servicios
-                    { wch: 15 },  // Método de Pago
-                    { wch: 12 }   // Monto
-                ];
-                
-                // Nombre de la hoja
-                const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-                const sheetName = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
-                
-                XLSX.utils.book_append_sheet(wb, ws, sheetName);
-
-                // Generar nombre de archivo con mes y año
-                const fileName = `Cobranzas_${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}.xlsx`;
-                
-                // Descargar archivo
-                XLSX.writeFile(wb, fileName);
-                
-                console.log(`Excel exportado automáticamente: ${fileName}`);
-                
-            } catch (error) {
-                console.error('Error al exportar:', error);
             }
         }
 
@@ -608,6 +504,110 @@
             } catch (error) {
                 console.error('Error renderizando servicios:', error);
                 noServicesMessage.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * Agrega una nueva transacción a Firestore
+         * @param {Object} transaction - Objeto con datos de la transacción
+         */
+        async function addTransaction(transaction) {
+            try {
+                const docId = await transactionsAPI.create(transaction);
+                console.log('✅ Transacción guardada en Firestore con ID:', docId);
+                return docId;
+            } catch (error) {
+                console.error('❌ Error guardando transacción:', error);
+                throw error;
+            }
+        }
+
+        /**
+         * Exporta las transacciones a un archivo Excel mensual (MANUAL)
+         */
+        async function exportToExcel() {
+            const transactions = await loadTransactions();
+            
+            if (transactions.length === 0) {
+                return; // No hay nada que exportar
+            }
+
+            try {
+                // Obtener mes y año actual
+                const now = new Date();
+                const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+                
+                // Filtrar transacciones del mes actual
+                const monthTransactions = transactions.filter(t => {
+                    const transDate = new Date(t.fecha);
+                    const transMonth = transDate.getFullYear() + '-' + String(transDate.getMonth() + 1).padStart(2, '0');
+                    return transMonth === currentMonth;
+                });
+
+                if (monthTransactions.length === 0) {
+                    return; // No hay transacciones del mes actual
+                }
+
+                // Preparar datos para Excel
+                const excelData = monthTransactions.map(t => ({
+                    'Fecha': new Date(t.fecha).toLocaleDateString('es-AR'),
+                    'Hora': new Date(t.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+                    'ID Transacción': t.transactionId,
+                    'Operador': t.operador,
+                    'Servicios': t.servicios.join(', '),
+                    'Método de Pago': t.metodoPago,
+                    'Monto': `$${t.monto}`
+                }));
+
+                // Calcular total del mes
+                const monthTotal = monthTransactions.reduce((sum, t) => {
+                    const amount = parseFloat(t.monto) || 0;
+                    return sum + amount;
+                }, 0);
+
+                // Agregar fila de total
+                excelData.push({
+                    'Fecha': '',
+                    'Hora': '',
+                    'ID Transacción': '',
+                    'Operador': '',
+                    'Servicios': 'TOTAL',
+                    'Método de Pago': '',
+                    'Monto': `$${monthTotal.toFixed(2)}`
+                });
+
+                // Crear workbook y worksheet
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(excelData);
+                
+                // Ajustar anchos de columna
+                ws['!cols'] = [
+                    { wch: 12 },  // Fecha
+                    { wch: 8 },   // Hora
+                    { wch: 15 },  // ID Transacción
+                    { wch: 12 },  // Operador
+                    { wch: 35 },  // Servicios
+                    { wch: 15 },  // Método de Pago
+                    { wch: 12 }   // Monto
+                ];
+                
+                // Nombre de la hoja
+                const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                const sheetName = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+                
+                XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+                // Generar nombre de archivo con mes y año
+                const fileName = `Cobranzas_${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}.xlsx`;
+                
+                // Descargar archivo
+                XLSX.writeFile(wb, fileName);
+                
+                console.log(`Excel exportado automáticamente: ${fileName}`);
+                
+            } catch (error) {
+                console.error('Error al exportar:', error);
             }
         }
 
@@ -740,6 +740,11 @@
             
             // Extraer el valor numérico del total (remove $ if present)
             const totalStr = totalAmountInput.value.replace('$', '').trim();
+            const selectedServiceElements = document.querySelectorAll('input[name="servicio"]:checked');
+            const selectedServices = Array.from(selectedServiceElements).map(cb => cb.value);
+            const selectedOperator = operatorSelect ? operatorSelect.value : '';
+            const clientDNIValue = clientDNI.value.trim(); // DNI ingresado
+            const selectedPayment = document.querySelector('input[name="pago"]:checked');
             
             // Limpiar errores anteriores
             clearValidationErrors('validationErrors');
@@ -816,76 +821,6 @@
                 // Limpiar el formulario después del cobro exitoso
                 serviceForm.reset();
                 totalAmountInput.value = '';
-
-            const selectedServices = Array.from(selectedServiceElements).map(cb => cb.value);
-            const selectedOperator = operatorSelect ? operatorSelect.value : '';
-            const clientDNIValue = clientDNI.value.trim(); // DNI ingresado
-
-            // 1. Validaciones
-            if (selectedServices.length === 0) {
-                showMessage('Por favor, selecciona al menos un servicio.', 'error');
-                return;
-            }
-
-            if (!selectedPayment) {
-                showMessage('Por favor, selecciona un método de pago.', 'error');
-                return;
-            }
-
-            if (!selectedOperator) {
-                showMessage('Por favor, selecciona un operador.', 'error');
-                return;
-            }
-
-            if (isNaN(total) || total <= 0) {
-                showMessage('Debes ingresar un monto total válido y positivo.', 'error');
-                totalAmountInput.focus();
-                return;
-            }
-
-            // Validar que si se ingresó un DNI, el cliente existe
-            if (clientDNIValue && !selectedClient) {
-                showMessage('El DNI ingresado no coincide con ningún cliente. Verifica los datos.', 'error');
-                clientDNI.focus();
-                return;
-            }
-            
-            // Ocultar mensaje de error si las validaciones pasan
-            resultMessage.classList.add('hidden');
-
-            // Deshabilitar botón mientras se procesa
-            chargeButton.disabled = true;
-            chargeButton.textContent = 'Procesando...';
-
-            try {
-                // 2. Crear objeto de transacción con timestamp
-                const paymentType = selectedPayment.value;
-                const transactionId = generateTransactionId();
-                const transactionData = {
-                    id: Date.now(), // ID único basado en timestamp
-                    transactionId: transactionId,
-                    monto: total.toFixed(2),
-                    metodoPago: paymentType,
-                    servicios: selectedServices,
-                    operador: selectedOperator,
-                    clienteDNI: clientDNIValue || null, // DNI del cliente (puede ser null si no se ingresa)
-                    clienteName: selectedClient ? selectedClient.name : null, // Nombre del cliente
-                    fecha: new Date().toISOString() // Fecha completa en formato ISO
-                };
-
-                // 3. Guardar en Firestore
-                await addTransaction(transactionData);
-                
-                console.log("--- Cobro Realizado y Guardado en Firestore ---");
-                console.log(`Monto: $${total.toFixed(2)} | Método: ${paymentType} | ID: ${transactionId} | Cliente: ${selectedClient ? selectedClient.name : 'N/A'}`);
-                console.log("-----------------------------------------------");
-
-                // 4. Mostrar el Ticket de Pago
-                showPaymentTicket(total, paymentType, selectedServices, transactionId, selectedOperator, selectedClient ? selectedClient.name : null);
-
-                // Limpiar el formulario después del cobro exitoso
-                serviceForm.reset();
-                totalAmountInput.value = '';
                 clientDNI.value = ''; // Limpiar DNI
                 selectedClient = null;
                 clientInfo.classList.add('hidden');
@@ -935,8 +870,11 @@
 
             // Mostrar el operador en el ticket si se recibe
             if (ticketOperator) {
-                const operatorText = operator ? `Operador: ${operator}` : '';
-                ticketOperator.textContent = operatorText + (clientName ? ` | Cliente: ${clientName}` : '');
+                let operatorText = operator ? (`Operador: ${operator}`) : '';
+                if (clientName) {
+                    operatorText += ` | Cliente: ${clientName}`;
+                }
+                ticketOperator.textContent = operatorText;
             }
 
             // 3. Mostrar el modal
