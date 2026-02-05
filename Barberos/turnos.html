@@ -62,7 +62,7 @@
         }
     </style>
 </head>
-<body onload="renderTurnosPage()">
+<body>
 
     <!-- PÁGINA PRINCIPAL -->
     <div class="app-container">
@@ -410,6 +410,9 @@
                 el.style.border = 'none';
             }, 5000);
         }
+        
+        // Inicializar la página cuando se cargan todos los módulos
+        renderTurnosPage();
 
     </script>
 </body>
